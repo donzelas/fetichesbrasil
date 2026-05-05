@@ -1,0 +1,102 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { formatTime } from "@/lib/utils/format";
+import { cn } from "@/lib/utils/cn";
+import type { Message, Profile } from "@/types/database";
+
+type MessageWithUser = Message & {
+  user: Pick<Profile, "id" | "username" | "display_name" | "avatar_url"> | null;
+};
+
+interface MessageListProps {
+  roomId: string;
+  currentUserId: string;
+  initialMessages: MessageWithUser[];
+}
+
+export function MessageList({ roomId, currentUserId, initialMessages }: MessageListProps) {
+  const [messages, setMessages] = useState<MessageWithUser[]>(initialMessages);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`messages:${roomId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `room_id=eq.${roomId}`,
+        },
+        async (payload) => {
+          const m = payload.new as Message;
+          const { data: user } = await supabase
+            .from("profiles")
+            .select("id, username, display_name, avatar_url")
+            .eq("id", m.user_id)
+            .single();
+          setMessages((prev) => [...prev, { ...m, user } as MessageWithUser]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [roomId]);
+
+  return (
+    <div className="scrollbar-thin flex-1 space-y-4 overflow-y-auto p-4">
+      {messages.length === 0 && (
+        <p className="text-center text-sm text-muted-foreground">
+          Seja o primeiro a quebrar o gelo aqui...
+        </p>
+      )}
+      {messages.map((m) => {
+        const own = m.user_id === currentUserId;
+        const initial =
+          m.user?.display_name?.charAt(0)?.toUpperCase() ??
+          m.user?.username?.charAt(0)?.toUpperCase() ??
+          "?";
+        return (
+          <div
+            key={m.id}
+            className={cn("flex gap-2", own ? "flex-row-reverse" : "flex-row")}
+          >
+            <Avatar className="h-8 w-8 shrink-0">
+              {m.user?.avatar_url && <AvatarImage src={m.user.avatar_url} />}
+              <AvatarFallback className="text-xs">{initial}</AvatarFallback>
+            </Avatar>
+            <div className={cn("flex max-w-[75%] flex-col gap-1", own && "items-end")}>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>{m.user?.display_name ?? m.user?.username ?? "—"}</span>
+                <span>·</span>
+                <span>{formatTime(m.created_at)}</span>
+              </div>
+              <div
+                className={cn(
+                  "rounded-2xl px-3 py-2 text-sm",
+                  own
+                    ? "rounded-tr-sm gradient-primary text-white"
+                    : "rounded-tl-sm bg-muted text-foreground"
+                )}
+              >
+                {m.content}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+      <div ref={bottomRef} />
+    </div>
+  );
+}
