@@ -166,19 +166,25 @@ export function BlogComposer({ currentUserId, categories }: BlogComposerProps) {
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {!open ? (
+          <p className="flex-1 text-xs text-muted-foreground">
+            Compartilhe sua história, fantasia ou fetiche. Toda publicação passa por aprovação.
+          </p>
+        ) : (
+          <span className="flex-1" aria-hidden />
+        )}
         <Button
           type="button"
           variant={open ? "outline" : "gradient"}
-          size="lg"
+          size="sm"
           onClick={() => (open ? handleClose() : setOpen(true))}
-          className="w-full sm:w-auto"
           disabled={submitting}
         >
           {open ? (
             <>
               <X className="h-4 w-4" />
-              Cancelar publicação
+              Cancelar
             </>
           ) : (
             <>
@@ -187,11 +193,6 @@ export function BlogComposer({ currentUserId, categories }: BlogComposerProps) {
             </>
           )}
         </Button>
-        {!open && (
-          <p className="text-xs text-muted-foreground">
-            Compartilhe sua história, fantasia ou fetiche. Toda publicação passa por aprovação.
-          </p>
-        )}
       </div>
 
       <div
