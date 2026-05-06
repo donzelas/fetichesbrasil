@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CategoriesGrid } from "@/components/home/CategoriesGrid";
 import { FeaturedSection } from "@/components/home/FeaturedSection";
 import { TopActiveSection } from "@/components/home/TopActiveSection";
+import { FeaturedCardsCarousel } from "@/components/home/FeaturedCardsCarousel";
 import type { CategoryWithFetishes } from "@/types/database";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +24,7 @@ export default async function HomePage() {
     { data: top },
     { count: userRoomsCount },
     { count: totalRoomsCount },
+    { data: featuredCards },
   ] = await Promise.all([
     supabase
       .from("categories")
@@ -52,38 +54,47 @@ export default async function HomePage() {
       .from("chat_rooms")
       .select("*", { count: "exact", head: true })
       .is("deleted_at", null),
+    supabase
+      .from("featured_fetish_cards")
+      .select("id, title, description, image_url")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true }),
   ]);
 
   const categories = (cats ?? []) as unknown as CategoryWithFetishes[];
 
   return (
     <div className="container space-y-12 py-8">
+      {(featuredCards?.length ?? 0) > 0 && (
+        <FeaturedCardsCarousel cards={featuredCards ?? []} />
+      )}
+
       {!viewer.isPremium && (
         <section className="relative overflow-hidden rounded-3xl border border-border/50 bg-gradient-to-br from-card via-card/80 to-background p-8 md:p-12">
           <div className="relative z-10 max-w-2xl">
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-              <Sparkles className="h-3 w-3" />
-              Bem-vindo ao Fetiches Brasil
+              <Crown className="h-3 w-3" />
+              Desbloqueie tudo com Premium
             </div>
             <h1 className="text-balance text-4xl font-bold tracking-tight md:text-5xl">
-              Conecte-se com pessoas que compartilham seus{" "}
+              Converse de verdade com quem compartilha seus{" "}
               <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 desejos mais íntimos
               </span>
             </h1>
             <p className="mt-4 text-lg text-muted-foreground">
-              Salas privadas, chats em tempo real e uma comunidade adulta segura, consensual e sem
-              julgamentos. Apenas para maiores de 18 anos.
+              Acesso ilimitado a todas as salas, chat em tempo real e a possibilidade de criar a sua
+              própria sala. Comunidade adulta, segura e sem julgamentos.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Button asChild size="lg" variant="gradient">
-                <Link href="/salas">Explorar salas</Link>
-              </Button>
               <Button asChild size="lg" variant="premium">
                 <Link href="/premium">
                   <Crown className="h-5 w-5" />
                   Virar Premium
                 </Link>
+              </Button>
+              <Button asChild size="lg" variant="outline">
+                <Link href="/salas">Explorar salas</Link>
               </Button>
             </div>
           </div>

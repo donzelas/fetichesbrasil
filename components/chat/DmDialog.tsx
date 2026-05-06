@@ -86,7 +86,8 @@ export function DmDialog({
   const [addOpen, setAddOpen] = useState(false);
   const [, forceTick] = useState(0);
 
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const didMountScrollRef = useRef(false);
   const galleryRef = useRef<HTMLInputElement | null>(null);
   const cameraRef = useRef<HTMLInputElement | null>(null);
 
@@ -237,8 +238,22 @@ export function DmDialog({
   }, [open, threadId]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    if (!didMountScrollRef.current) {
+      el.scrollTop = el.scrollHeight;
+      didMountScrollRef.current = true;
+      return;
+    }
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distanceFromBottom < 120) {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    }
   }, [messages]);
+
+  useEffect(() => {
+    if (!open) didMountScrollRef.current = false;
+  }, [open]);
 
   // Tick a cada 1s para atualizar contadores de expiração
   useEffect(() => {
@@ -407,7 +422,10 @@ export function DmDialog({
           </Button>
         </DialogHeader>
 
-        <div className="scrollbar-thin flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto bg-background/40 p-4">
+        <div
+          ref={messagesContainerRef}
+          className="scrollbar-thin flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto bg-background/40 p-4"
+        >
           {loading ? (
             <div className="flex flex-1 items-center justify-center">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -469,7 +487,6 @@ export function DmDialog({
               );
             })
           )}
-          <div ref={bottomRef} />
         </div>
 
         {pendingPreview && (

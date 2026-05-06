@@ -77,7 +77,7 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
     | { name: string; category: { name: string; emoji: string | null } | null }
     | null;
 
-  const backHref = isAdmin ? "/admin/salas" : "/salas";
+  const backHref = isAdmin ? "/admin/salas" : "/";
 
   return (
     <div className="container flex h-[calc(100vh-4rem)] flex-col px-2 py-2 sm:px-4 sm:py-4">

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PrivacyPolicyTrigger, TermsOfUseTrigger } from "@/components/legal/LegalDialogs";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -120,8 +121,17 @@ export default function SignupPage() {
               onChange={(e) => setAccepted(e.target.checked)}
               className="mt-1"
             />
-            Confirmo que tenho 18 anos ou mais e aceito os Termos de Uso e a Política de
-            Privacidade.
+            <span>
+              Confirmo que tenho 18 anos ou mais e aceito os{" "}
+              <TermsOfUseTrigger className="text-primary underline-offset-2 hover:underline">
+                Termos de Uso
+              </TermsOfUseTrigger>{" "}
+              e a{" "}
+              <PrivacyPolicyTrigger className="text-primary underline-offset-2 hover:underline">
+                Política de Privacidade
+              </PrivacyPolicyTrigger>
+              .
+            </span>
           </label>
 
           <Button type="submit" className="w-full" size="lg" variant="gradient" disabled={loading}>

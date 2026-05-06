@@ -69,6 +69,12 @@ export function Header() {
               Salas
             </Link>
             <Link
+              href="/admin/destaques"
+              className="text-sm text-muted-foreground hover:text-foreground transition"
+            >
+              Destaques
+            </Link>
+            <Link
               href="/admin/mensagens"
               className="text-sm text-muted-foreground hover:text-foreground transition"
             >

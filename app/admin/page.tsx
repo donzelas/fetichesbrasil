@@ -1,5 +1,12 @@
 import Link from "next/link";
-import { Crown, Flame, MessageCircle, MessageSquare, Users } from "lucide-react";
+import {
+  Crown,
+  Flame,
+  Image as ImageIcon,
+  MessageCircle,
+  MessageSquare,
+  Users,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -14,6 +21,7 @@ export default async function AdminHomePage() {
     { count: totalRooms },
     { count: totalFeatured },
     { count: totalDmThreads },
+    { count: totalFeaturedCards },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -36,6 +44,10 @@ export default async function AdminHomePage() {
     supabase
       .from("dm_threads")
       .select("*", { count: "exact", head: true }),
+    supabase
+      .from("featured_fetish_cards")
+      .select("*", { count: "exact", head: true })
+      .eq("is_active", true),
   ]);
 
   const stats = [
@@ -44,6 +56,7 @@ export default async function AdminHomePage() {
     { label: "Salas ativas", value: totalRooms ?? 0, icon: MessageSquare },
     { label: "Salas em destaque", value: totalFeatured ?? 0, icon: Flame },
     { label: "Chats individuais", value: totalDmThreads ?? 0, icon: MessageCircle },
+    { label: "Cards de destaque", value: totalFeaturedCards ?? 0, icon: ImageIcon },
   ];
 
   return (
@@ -53,7 +66,7 @@ export default async function AdminHomePage() {
         <p className="text-muted-foreground">Gestão geral da plataforma.</p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {stats.map((s) => (
           <Card key={s.label}>
             <CardContent className="flex items-center gap-3 py-5">
@@ -69,13 +82,23 @@ export default async function AdminHomePage() {
         ))}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Link href="/admin/salas" className="group">
           <Card className="transition hover:border-primary/50">
             <CardContent className="py-6">
               <h3 className="font-semibold group-hover:text-primary">Gerenciar salas</h3>
               <p className="mt-1 text-sm text-muted-foreground">
                 Marcar/desmarcar destaque, deletar salas problemáticas.
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/admin/destaques" className="group">
+          <Card className="transition hover:border-primary/50">
+            <CardContent className="py-6">
+              <h3 className="font-semibold group-hover:text-primary">Cards de destaque</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Editar/criar/excluir cards do carrossel da home (auto-slide 3s).
               </p>
             </CardContent>
           </Card>

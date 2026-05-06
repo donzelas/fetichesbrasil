@@ -1,7 +1,16 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Sparkles } from "lucide-react";
+import { getViewer } from "@/lib/supabase/server";
 
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+export const dynamic = "force-dynamic";
+
+export default async function AuthLayout({ children }: { children: React.ReactNode }) {
+  const viewer = await getViewer();
+  if (viewer.isAuthenticated) {
+    redirect(viewer.isAdmin ? "/admin" : "/");
+  }
+
   return (
     <div className="container flex min-h-[calc(100vh-8rem)] items-center justify-center py-10">
       <div className="w-full max-w-md">

@@ -19,10 +19,21 @@ interface MessageListProps {
 
 export function MessageList({ roomId, currentUserId, initialMessages }: MessageListProps) {
   const [messages, setMessages] = useState<MessageWithUser[]>(initialMessages);
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const didMountRef = useRef(false);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = containerRef.current;
+    if (!el) return;
+    if (!didMountRef.current) {
+      el.scrollTop = el.scrollHeight;
+      didMountRef.current = true;
+      return;
+    }
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distanceFromBottom < 120) {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    }
   }, [messages]);
 
   useEffect(() => {
@@ -63,7 +74,10 @@ export function MessageList({ roomId, currentUserId, initialMessages }: MessageL
   }, [roomId]);
 
   return (
-    <div className="scrollbar-thin min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
+    <div
+      ref={containerRef}
+      className="scrollbar-thin min-h-0 flex-1 space-y-4 overflow-y-auto p-4"
+    >
       {messages.length === 0 && (
         <p className="text-center text-sm text-muted-foreground">
           Seja o primeiro a quebrar o gelo aqui...
@@ -104,7 +118,6 @@ export function MessageList({ roomId, currentUserId, initialMessages }: MessageL
           </div>
         );
       })}
-      <div ref={bottomRef} />
     </div>
   );
 }

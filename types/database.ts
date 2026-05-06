@@ -382,6 +382,42 @@ export interface Database {
         };
         Relationships: [];
       };
+      featured_fetish_cards: {
+        Row: {
+          id: string;
+          title: string;
+          description: string;
+          image_url: string;
+          fetish_id: string | null;
+          sort_order: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          description: string;
+          image_url: string;
+          fetish_id?: string | null;
+          sort_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          description?: string;
+          image_url?: string;
+          fetish_id?: string | null;
+          sort_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;

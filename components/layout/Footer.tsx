@@ -1,12 +1,27 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Sparkles } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
+import { createClient } from "@/lib/supabase/client";
+import { PrivacyPolicyTrigger, TermsOfUseTrigger } from "@/components/legal/LegalDialogs";
 
 export function Footer() {
-  const { isAdmin } = useUser();
+  const { user, isAdmin, isPremium, loading } = useUser();
+  const router = useRouter();
+
   if (isAdmin) return null;
+
+  const isAuthenticated = !!user;
+
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/");
+    router.refresh();
+  }
+
   return (
     <footer className="mt-16 border-t border-border/50 bg-card/40">
       <div className="container py-10">
@@ -26,16 +41,41 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/" className="hover:text-foreground">Home</Link></li>
               <li><Link href="/salas" className="hover:text-foreground">Salas</Link></li>
-              <li><Link href="/premium" className="hover:text-foreground">Premium</Link></li>
+              {!isPremium && (
+                <li><Link href="/premium" className="hover:text-foreground">Premium</Link></li>
+              )}
+              {isPremium && (
+                <li><Link href="/salas/nova" className="hover:text-foreground">Criar sala</Link></li>
+              )}
             </ul>
           </div>
 
           <div>
             <h4 className="mb-3 text-sm font-semibold">Conta</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link href="/login" className="hover:text-foreground">Entrar</Link></li>
-              <li><Link href="/signup" className="hover:text-foreground">Criar conta</Link></li>
-              <li><Link href="/reset-password" className="hover:text-foreground">Esqueci a senha</Link></li>
+              {loading ? null : isAuthenticated ? (
+                <>
+                  <li><Link href="/perfil" className="hover:text-foreground">Meu perfil</Link></li>
+                  {!isPremium && (
+                    <li><Link href="/premium" className="hover:text-foreground">Virar Premium</Link></li>
+                  )}
+                  <li>
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="hover:text-foreground"
+                    >
+                      Sair
+                    </button>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li><Link href="/login" className="hover:text-foreground">Entrar</Link></li>
+                  <li><Link href="/signup" className="hover:text-foreground">Criar conta</Link></li>
+                  <li><Link href="/reset-password" className="hover:text-foreground">Esqueci a senha</Link></li>
+                </>
+              )}
             </ul>
           </div>
 
@@ -44,8 +84,12 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>Apenas para maiores de 18 anos</li>
               <li>Conteúdo entre adultos consensuais</li>
-              <li>Política de privacidade</li>
-              <li>Termos de uso</li>
+              <li>
+                <PrivacyPolicyTrigger>Política de privacidade</PrivacyPolicyTrigger>
+              </li>
+              <li>
+                <TermsOfUseTrigger>Termos de uso</TermsOfUseTrigger>
+              </li>
             </ul>
           </div>
         </div>
