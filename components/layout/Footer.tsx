@@ -40,7 +40,8 @@ export function Footer() {
             <h4 className="mb-3 text-sm font-semibold">Navegação</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/" className="hover:text-foreground">Home</Link></li>
-              <li><Link href="/salas" className="hover:text-foreground">Salas</Link></li>
+              <li><Link href="/chat" className="hover:text-foreground">Chat</Link></li>
+              <li><Link href="/blog" className="hover:text-foreground">Blog</Link></li>
               {!isPremium && (
                 <li><Link href="/premium" className="hover:text-foreground">Premium</Link></li>
               )}

@@ -418,6 +418,110 @@ export interface Database {
         };
         Relationships: [];
       };
+      blog_posts: {
+        Row: {
+          id: string;
+          author_id: string;
+          fetish_id: string | null;
+          title: string;
+          content: string;
+          image_paths: string[];
+          status: "pending" | "approved" | "rejected";
+          rejection_reason: string | null;
+          approved_by: string | null;
+          approved_at: string | null;
+          like_count: number;
+          comment_count: number;
+          is_pinned: boolean;
+          last_activity_at: string;
+          created_at: string;
+          updated_at: string;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          author_id: string;
+          fetish_id?: string | null;
+          title: string;
+          content: string;
+          image_paths?: string[];
+          status?: "pending" | "approved" | "rejected";
+          rejection_reason?: string | null;
+          approved_by?: string | null;
+          approved_at?: string | null;
+          like_count?: number;
+          comment_count?: number;
+          is_pinned?: boolean;
+          last_activity_at?: string;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["blog_posts"]["Insert"]>;
+        Relationships: [];
+      };
+      blog_post_comments: {
+        Row: {
+          id: string;
+          post_id: string;
+          author_id: string;
+          content: string;
+          created_at: string;
+          deleted_at: string | null;
+          deleted_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          post_id: string;
+          author_id: string;
+          content: string;
+          created_at?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["blog_post_comments"]["Insert"]>;
+        Relationships: [];
+      };
+      blog_post_likes: {
+        Row: {
+          post_id: string;
+          user_id: string;
+          created_at: string;
+        };
+        Insert: {
+          post_id: string;
+          user_id: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["blog_post_likes"]["Insert"]>;
+        Relationships: [];
+      };
+      blog_post_reports: {
+        Row: {
+          id: string;
+          reporter_id: string;
+          post_id: string | null;
+          comment_id: string | null;
+          reason: string;
+          resolved: boolean;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          reporter_id: string;
+          post_id?: string | null;
+          comment_id?: string | null;
+          reason: string;
+          resolved?: boolean;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["blog_post_reports"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -438,6 +542,33 @@ export interface Database {
         Args: { p_reported_id: string; p_reason: string; p_room_id?: string | null };
         Returns: string;
       };
+      create_blog_post: {
+        Args: {
+          p_title: string;
+          p_content: string;
+          p_fetish_id: string | null;
+          p_image_paths: string[];
+        };
+        Returns: string;
+      };
+      toggle_blog_post_like: { Args: { p_post_id: string }; Returns: boolean };
+      add_blog_comment: { Args: { p_post_id: string; p_content: string }; Returns: string };
+      soft_delete_my_blog_post: { Args: { p_post_id: string }; Returns: undefined };
+      approve_blog_post: { Args: { p_post_id: string }; Returns: undefined };
+      reject_blog_post: { Args: { p_post_id: string; p_reason: string }; Returns: undefined };
+      delete_blog_comment: { Args: { p_comment_id: string }; Returns: undefined };
+      pin_blog_post: { Args: { p_post_id: string; p_pin: boolean }; Returns: undefined };
+      report_blog: {
+        Args: {
+          p_post_id: string | null;
+          p_comment_id: string | null;
+          p_reason: string;
+        };
+        Returns: string;
+      };
+      global_online_users: { Args: Record<PropertyKey, never>; Returns: number };
+      global_active_rooms: { Args: Record<PropertyKey, never>; Returns: number };
+      blog_posts_today: { Args: Record<PropertyKey, never>; Returns: number };
     };
     Enums: {
       [_ in never]: never;
@@ -460,6 +591,17 @@ export type RoomParticipant = Tables<"room_participants">;
 
 export type ChatRoomWithRelations = ChatRoom & {
   owner: Pick<Profile, "id" | "username" | "display_name" | "avatar_url"> | null;
+  fetish: (Pick<Fetish, "id" | "name" | "slug"> & {
+    category: Pick<Category, "id" | "name" | "slug" | "emoji"> | null;
+  }) | null;
+};
+
+export type BlogPost = Tables<"blog_posts">;
+export type BlogPostComment = Tables<"blog_post_comments">;
+export type BlogPostLike = Tables<"blog_post_likes">;
+
+export type BlogPostWithAuthor = BlogPost & {
+  author: Pick<Profile, "id" | "username" | "display_name" | "avatar_url" | "is_premium"> | null;
   fetish: (Pick<Fetish, "id" | "name" | "slug"> & {
     category: Pick<Category, "id" | "name" | "slug" | "emoji"> | null;
   }) | null;

@@ -1,70 +1,59 @@
 import Link from "next/link";
-import { Crown, Sparkles } from "lucide-react";
+import { Crown } from "lucide-react";
 import { createClient, getViewerOrRedirectAdmin } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
-import { CategoriesGrid } from "@/components/home/CategoriesGrid";
-import { FeaturedSection } from "@/components/home/FeaturedSection";
-import { TopActiveSection } from "@/components/home/TopActiveSection";
 import { FeaturedCardsCarousel } from "@/components/home/FeaturedCardsCarousel";
-import type { CategoryWithFetishes } from "@/types/database";
+import { HomeFeatureCards } from "@/components/home/HomeFeatureCards";
+import { signBlogImagePaths } from "@/lib/blog/sign-images";
 
 export const dynamic = "force-dynamic";
-
-const ROOM_FIELDS =
-  "id, name, description, is_premium_only, is_featured, active_users_count, unlock_message, fetish:fetishes(name, category:categories(name, emoji))";
 
 export default async function HomePage() {
   const supabase = await createClient();
   const viewer = await getViewerOrRedirectAdmin("/");
-  const initialViewer = { isPremium: viewer.isPremium, isAuthenticated: viewer.isAuthenticated };
 
   const [
-    { data: cats },
-    { data: featured },
-    { data: top },
-    { count: userRoomsCount },
-    { count: totalRoomsCount },
     { data: featuredCards },
+    { data: rpcOnline },
+    { data: rpcRooms },
+    { data: rpcPosts },
+    { data: latestPost },
   ] = await Promise.all([
-    supabase
-      .from("categories")
-      .select("*, fetishes(*)")
-      .order("sort_order", { ascending: true })
-      .order("sort_order", { referencedTable: "fetishes", ascending: true }),
-    supabase
-      .from("chat_rooms")
-      .select(ROOM_FIELDS)
-      .eq("is_featured", true)
-      .is("deleted_at", null)
-      .order("active_users_count", { ascending: false })
-      .limit(6),
-    supabase
-      .from("chat_rooms")
-      .select(ROOM_FIELDS)
-      .is("deleted_at", null)
-      .order("active_users_count", { ascending: false })
-      .order("last_activity_at", { ascending: false })
-      .limit(15),
-    supabase
-      .from("chat_rooms")
-      .select("*", { count: "exact", head: true })
-      .not("owner_id", "is", null)
-      .is("deleted_at", null),
-    supabase
-      .from("chat_rooms")
-      .select("*", { count: "exact", head: true })
-      .is("deleted_at", null),
     supabase
       .from("featured_fetish_cards")
       .select("id, title, description, image_url")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
+    supabase.rpc("global_online_users"),
+    supabase.rpc("global_active_rooms"),
+    supabase.rpc("blog_posts_today"),
+    supabase
+      .from("blog_posts")
+      .select("id, title, image_paths")
+      .eq("status", "approved")
+      .is("deleted_at", null)
+      .order("approved_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
-  const categories = (cats ?? []) as unknown as CategoryWithFetishes[];
+  const onlineUsers = typeof rpcOnline === "number" ? rpcOnline : 0;
+  const activeRooms = typeof rpcRooms === "number" ? rpcRooms : 0;
+  const postsToday = typeof rpcPosts === "number" ? rpcPosts : 0;
+
+  let latestThumb: string | null = null;
+  let latestTitle: string | null = null;
+  if (latestPost) {
+    latestTitle = latestPost.title;
+    const firstPath = latestPost.image_paths?.[0] ?? null;
+    if (firstPath) {
+      const map = await signBlogImagePaths(supabase, [firstPath]);
+      latestThumb = map[firstPath] ?? null;
+    }
+  }
 
   return (
-    <div className="container space-y-12 py-8">
+    <div className="container space-y-10 py-8">
       {(featuredCards?.length ?? 0) > 0 && (
         <FeaturedCardsCarousel cards={featuredCards ?? []} />
       )}
@@ -94,7 +83,7 @@ export default async function HomePage() {
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline">
-                <Link href="/salas">Explorar salas</Link>
+                <Link href="/chat">Explorar chat</Link>
               </Button>
             </div>
           </div>
@@ -110,15 +99,14 @@ export default async function HomePage() {
         </section>
       )}
 
-      <CategoriesGrid
-        categories={categories}
-        userRoomsCount={userRoomsCount ?? 0}
-        totalRoomsCount={totalRoomsCount ?? 0}
+      <HomeFeatureCards
+        chat={{ activeRooms, onlineUsers }}
+        blog={{
+          postsToday,
+          latestPostThumb: latestThumb,
+          latestPostTitle: latestTitle,
+        }}
       />
-
-      <FeaturedSection rooms={featured ?? []} initialViewer={initialViewer} />
-
-      <TopActiveSection rooms={top ?? []} initialViewer={initialViewer} />
     </div>
   );
 }

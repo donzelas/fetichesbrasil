@@ -75,10 +75,16 @@ export function Header() {
               Destaques
             </Link>
             <Link
+              href="/admin/posts"
+              className="text-sm text-muted-foreground hover:text-foreground transition"
+            >
+              Blog
+            </Link>
+            <Link
               href="/admin/mensagens"
               className="text-sm text-muted-foreground hover:text-foreground transition"
             >
-              Chats individuais
+              Chats
             </Link>
             <Link
               href="/admin/usuarios"
@@ -92,8 +98,11 @@ export function Header() {
             <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition">
               Home
             </Link>
-            <Link href="/salas" className="text-sm text-muted-foreground hover:text-foreground transition">
-              Salas
+            <Link href="/chat" className="text-sm text-muted-foreground hover:text-foreground transition">
+              Chat
+            </Link>
+            <Link href="/blog" className="text-sm text-muted-foreground hover:text-foreground transition">
+              Blog
             </Link>
             <Link href="/premium" className="text-sm text-muted-foreground hover:text-foreground transition">
               Premium
