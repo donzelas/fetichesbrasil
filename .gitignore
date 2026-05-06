@@ -48,3 +48,6 @@ supabase/.temp
 pass.txt
 *.secret
 credentials.*
+
+# scripts locais de seed/teste com credenciais hardcoded
+/scripts/

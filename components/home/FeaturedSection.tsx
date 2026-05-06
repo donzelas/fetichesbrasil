@@ -9,7 +9,12 @@ type RoomForCard = Pick<
   fetish?: { name: string; category?: { name: string; emoji: string | null } | null } | null;
 };
 
-export function FeaturedSection({ rooms }: { rooms: RoomForCard[] }) {
+interface FeaturedSectionProps {
+  rooms: RoomForCard[];
+  initialViewer?: { isPremium: boolean; isAuthenticated: boolean };
+}
+
+export function FeaturedSection({ rooms, initialViewer }: FeaturedSectionProps) {
   if (rooms.length === 0) return null;
 
   return (
@@ -28,7 +33,7 @@ export function FeaturedSection({ rooms }: { rooms: RoomForCard[] }) {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {rooms.map((room) => (
-          <RoomCard key={room.id} room={room} variant="featured" />
+          <RoomCard key={room.id} room={room} variant="featured" initialViewer={initialViewer} />
         ))}
       </div>
     </section>

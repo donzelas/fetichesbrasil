@@ -1,7 +1,12 @@
+"use client";
+
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
+import { useUser } from "@/hooks/useUser";
 
 export function Footer() {
+  const { isAdmin } = useUser();
+  if (isAdmin) return null;
   return (
     <footer className="mt-16 border-t border-border/50 bg-card/40">
       <div className="container py-10">

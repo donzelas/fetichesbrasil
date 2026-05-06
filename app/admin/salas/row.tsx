@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Trash2, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
+import { useRoomPresenceCount } from "@/hooks/useRoomPresenceCount";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ export function AdminRoomRow({ room }: { room: AdminRoom }) {
   const [featured, setFeatured] = useState(room.is_featured);
   const [pending, start] = useTransition();
   const [deleting, setDeleting] = useState(false);
+  const liveCount = useRoomPresenceCount(room.id, !room.deleted_at);
 
   async function toggleFeatured(value: boolean) {
     setFeatured(value);
@@ -61,17 +63,31 @@ export function AdminRoomRow({ room }: { room: AdminRoom }) {
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 p-4">
-      <div className="min-w-0 flex-1">
+      <Link href={`/salas/${room.id}`} className="min-w-0 flex-1 group">
         <div className="flex items-center gap-2">
-          <span className="truncate font-medium">{room.name}</span>
+          <span className="truncate font-medium group-hover:text-primary transition">
+            {room.name}
+          </span>
           {room.deleted_at && <Badge variant="destructive">Deletada</Badge>}
-          {room.is_premium_only && <Badge variant="premium">Premium</Badge>}
         </div>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          @{room.owner?.username ?? "—"} · {room.active_users_count} online ·{" "}
-          {new Date(room.created_at).toLocaleDateString("pt-BR")}
+        <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span>@{room.owner?.username ?? "—"}</span>
+          <span>·</span>
+          <span className="inline-flex items-center gap-1">
+            {liveCount > 0 && (
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+              </span>
+            )}
+            <span className={liveCount > 0 ? "font-medium text-foreground" : undefined}>
+              {liveCount} online
+            </span>
+          </span>
+          <span>·</span>
+          <span>{new Date(room.created_at).toLocaleDateString("pt-BR")}</span>
         </p>
-      </div>
+      </Link>
 
       <div className="flex items-center gap-3">
         <label className="flex items-center gap-2 text-xs">

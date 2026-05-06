@@ -28,11 +28,16 @@ interface RoomCardProps {
   };
   variant?: "default" | "featured" | "compact";
   showRank?: number;
+  /** Estado inicial vindo do servidor para evitar flash de bloqueio durante hidratação */
+  initialViewer?: { isPremium: boolean; isAuthenticated: boolean };
 }
 
-export function RoomCard({ room, variant = "default", showRank }: RoomCardProps) {
+export function RoomCard({ room, variant = "default", showRank, initialViewer }: RoomCardProps) {
   const router = useRouter();
-  const { isPremium, profile, isAuthenticated } = useUser();
+  const { isPremium: clientIsPremium, profile, isAuthenticated: clientIsAuth, loading } = useUser();
+
+  const isPremium = loading && initialViewer ? initialViewer.isPremium : clientIsPremium;
+  const isAuthenticated = loading && initialViewer ? initialViewer.isAuthenticated : clientIsAuth;
   const [unlockOpen, setUnlockOpen] = useState(false);
   const [switchOpen, setSwitchOpen] = useState(false);
   const [currentRoomName, setCurrentRoomName] = useState("");

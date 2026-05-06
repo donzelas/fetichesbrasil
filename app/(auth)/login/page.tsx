@@ -31,12 +31,29 @@ function LoginForm() {
     e.preventDefault();
     setLoading(true);
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) {
-      toast.error("Falha no login", { description: error.message });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error || !data.user) {
+      setLoading(false);
+      toast.error("Falha no login", { description: error?.message ?? "Credenciais inválidas" });
       return;
     }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", data.user.id)
+      .single();
+
+    if (profile?.is_admin) {
+      await supabase.auth.signOut();
+      setLoading(false);
+      toast.error("Conta de administrador", {
+        description: "Use /admin para acessar o painel administrativo.",
+      });
+      return;
+    }
+
+    setLoading(false);
     toast.success("Bem-vindo de volta!");
     router.push(redirect);
     router.refresh();

@@ -20,14 +20,23 @@ interface PresenceListProps {
     display_name: string;
     avatar_url: string | null;
   };
+  invisible?: boolean;
 }
 
-export function PresenceList({ roomId, user }: PresenceListProps) {
+export function PresenceList({ roomId, user, invisible = false }: PresenceListProps) {
   const [users, setUsers] = useState<PresenceUser[]>([]);
 
   useEffect(() => {
     const supabase = createClient();
-    const channel = supabase.channel(`presence:${roomId}`, {
+    const channelName = `presence:${roomId}`;
+
+    for (const c of supabase.getChannels()) {
+      if (c.topic === `realtime:${channelName}`) {
+        supabase.removeChannel(c);
+      }
+    }
+
+    const channel = supabase.channel(channelName, {
       config: { presence: { key: user.id } },
     });
 
@@ -44,7 +53,7 @@ export function PresenceList({ roomId, user }: PresenceListProps) {
         setUsers(unique);
       })
       .subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
+        if (status === "SUBSCRIBED" && !invisible) {
           await channel.track({
             user_id: user.id,
             username: user.username,
@@ -55,17 +64,17 @@ export function PresenceList({ roomId, user }: PresenceListProps) {
       });
 
     return () => {
-      channel.untrack().then(() => supabase.removeChannel(channel));
+      supabase.removeChannel(channel);
     };
-  }, [roomId, user.id, user.username, user.display_name, user.avatar_url]);
+  }, [roomId, user.id, user.username, user.display_name, user.avatar_url, invisible]);
 
   return (
-    <div className="border-l border-border/50 bg-card/40 p-4 lg:w-64">
-      <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+    <div className="flex max-h-40 min-h-0 flex-col border-t border-border/50 bg-card/40 p-4 lg:max-h-none lg:w-64 lg:border-l lg:border-t-0">
+      <h3 className="mb-3 flex shrink-0 items-center gap-2 text-sm font-semibold">
         <Users className="h-4 w-4" />
         Online ({users.length})
       </h3>
-      <div className="scrollbar-thin space-y-2 overflow-y-auto">
+      <div className="scrollbar-thin min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
         {users.map((u) => {
           const initial =
             u.display_name?.charAt(0)?.toUpperCase() ??

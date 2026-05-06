@@ -9,6 +9,7 @@ export default async function AdminUsersPage() {
   const { data: users } = await supabase
     .from("profiles")
     .select("id, username, display_name, avatar_url, is_premium, is_admin, premium_since, created_at")
+    .eq("is_admin", false)
     .order("created_at", { ascending: false })
     .limit(200);
 

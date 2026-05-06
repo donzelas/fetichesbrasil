@@ -7,7 +7,11 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 
-export function LeaveRoomButton() {
+interface LeaveRoomButtonProps {
+  redirectTo?: string;
+}
+
+export function LeaveRoomButton({ redirectTo = "/" }: LeaveRoomButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -20,7 +24,7 @@ export function LeaveRoomButton() {
       toast.error("Erro ao sair", { description: error.message });
       return;
     }
-    router.push("/salas");
+    router.push(redirectTo);
     router.refresh();
   }
 

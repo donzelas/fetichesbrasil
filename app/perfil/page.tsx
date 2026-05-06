@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Crown, Plus, Trash2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getViewerOrRedirectAdmin } from "@/lib/supabase/server";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { DeleteRoomButton } from "./delete-room-button";
 export const dynamic = "force-dynamic";
 
 export default async function PerfilPage() {
+  await getViewerOrRedirectAdmin();
   const supabase = await createClient();
   const {
     data: { user },

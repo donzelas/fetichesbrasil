@@ -8,20 +8,31 @@ export const dynamic = "force-dynamic";
 export default async function AdminHomePage() {
   const supabase = await createClient();
 
-  const [{ count: totalUsers }, { count: totalPremium }, { count: totalRooms }, { count: totalFeatured }] =
-    await Promise.all([
-      supabase.from("profiles").select("*", { count: "exact", head: true }),
-      supabase.from("profiles").select("*", { count: "exact", head: true }).eq("is_premium", true),
-      supabase
-        .from("chat_rooms")
-        .select("*", { count: "exact", head: true })
-        .is("deleted_at", null),
-      supabase
-        .from("chat_rooms")
-        .select("*", { count: "exact", head: true })
-        .eq("is_featured", true)
-        .is("deleted_at", null),
-    ]);
+  const [
+    { count: totalUsers },
+    { count: totalPremium },
+    { count: totalRooms },
+    { count: totalFeatured },
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("*", { count: "exact", head: true })
+      .eq("is_admin", false),
+    supabase
+      .from("profiles")
+      .select("*", { count: "exact", head: true })
+      .eq("is_premium", true)
+      .eq("is_admin", false),
+    supabase
+      .from("chat_rooms")
+      .select("*", { count: "exact", head: true })
+      .is("deleted_at", null),
+    supabase
+      .from("chat_rooms")
+      .select("*", { count: "exact", head: true })
+      .eq("is_featured", true)
+      .is("deleted_at", null),
+  ]);
 
   const stats = [
     { label: "Usuários totais", value: totalUsers ?? 0, icon: Users },

@@ -1,11 +1,18 @@
 import Link from "next/link";
+import { Sparkles } from "lucide-react";
 import type { CategoryWithFetishes } from "@/types/database";
 
 interface CategoriesGridProps {
   categories: CategoryWithFetishes[];
+  userRoomsCount?: number;
+  totalRoomsCount?: number;
 }
 
-export function CategoriesGrid({ categories }: CategoriesGridProps) {
+export function CategoriesGrid({
+  categories,
+  userRoomsCount = 0,
+  totalRoomsCount = 0,
+}: CategoriesGridProps) {
   return (
     <section className="space-y-4">
       <div className="flex items-end justify-between">
@@ -53,6 +60,47 @@ export function CategoriesGrid({ categories }: CategoriesGridProps) {
             </div>
           </Link>
         ))}
+
+        <Link
+          href="/salas?usuarios=true"
+          className="group relative overflow-hidden rounded-xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card/50 p-5 transition-all hover:border-primary/60 hover:shadow-xl hover:shadow-primary/20"
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="mb-2 text-3xl">👥</div>
+              <h3 className="font-semibold leading-tight group-hover:text-primary transition">
+                Salas criadas pelos Usuários
+              </h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {userRoomsCount === 0
+                  ? "Nenhuma ainda"
+                  : `${userRoomsCount} ${userRoomsCount === 1 ? "sala" : "salas"} ativa${userRoomsCount === 1 ? "" : "s"}`}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-3">
+            <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-medium text-primary">
+              Comunidade Premium
+            </span>
+          </div>
+        </Link>
+
+      </div>
+
+      <div className="flex justify-center">
+        <Link
+          href="/salas"
+          className="group inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-5 py-2 text-sm font-medium text-accent transition-all hover:border-accent/70 hover:bg-accent/20 hover:shadow-lg hover:shadow-accent/20"
+        >
+          <Sparkles className="h-4 w-4" />
+          Ver todas as salas
+          {totalRoomsCount > 0 && (
+            <span className="rounded-full bg-accent/20 px-2 py-0.5 text-[11px] font-semibold">
+              {totalRoomsCount}
+            </span>
+          )}
+        </Link>
       </div>
     </section>
   );

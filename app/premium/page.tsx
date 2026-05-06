@@ -1,7 +1,10 @@
 import { Crown, Check, Sparkles, MessageCircle, Image as ImageIcon, Plus, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { getViewerOrRedirectAdmin } from "@/lib/supabase/server";
 import { ComingSoonButton } from "./coming-soon-button";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Premium",
@@ -40,7 +43,8 @@ const benefits = [
   },
 ];
 
-export default function PremiumPage() {
+export default async function PremiumPage() {
+  await getViewerOrRedirectAdmin();
   return (
     <div className="container max-w-5xl py-10">
       <div className="text-center">

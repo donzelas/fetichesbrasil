@@ -1,12 +1,13 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Crown } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getViewerOrRedirectAdmin } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateRoomForm } from "./form";
 
 export default async function NewRoomPage() {
+  await getViewerOrRedirectAdmin();
   const supabase = await createClient();
   const {
     data: { user },
@@ -100,12 +101,6 @@ export default async function NewRoomPage() {
     }
   }
 
-  const { data: cats } = await supabase
-    .from("categories")
-    .select("id, name, emoji, fetishes(id, name)")
-    .order("sort_order", { ascending: true })
-    .order("sort_order", { referencedTable: "fetishes", ascending: true });
-
   return (
     <div className="container max-w-2xl py-8">
       <h1 className="text-3xl font-bold tracking-tight">Criar nova sala</h1>
@@ -115,10 +110,7 @@ export default async function NewRoomPage() {
 
       <Card className="mt-6">
         <CardContent className="pt-6">
-          <CreateRoomForm
-            ownerId={user.id}
-            categories={(cats ?? []) as never}
-          />
+          <CreateRoomForm ownerId={user.id} />
         </CardContent>
       </Card>
     </div>

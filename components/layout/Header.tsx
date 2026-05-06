@@ -24,7 +24,7 @@ export function Header() {
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push("/");
+    router.push(isAdmin ? "/admin" : "/");
     router.refresh();
   }
 
@@ -33,31 +33,100 @@ export function Header() {
     profile?.username?.charAt(0)?.toUpperCase() ??
     "?";
 
+  const logoHref = isAdmin ? "/admin" : "/";
+
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/50 glass">
       <div className="container flex h-16 items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 font-bold">
-          <Sparkles className="h-6 w-6 text-primary" />
+        <Link href={logoHref} className="flex items-center gap-2 font-bold">
+          {isAdmin ? (
+            <Shield className="h-6 w-6 text-primary" />
+          ) : (
+            <Sparkles className="h-6 w-6 text-primary" />
+          )}
           <span className="text-lg tracking-tight">
             Fetiches <span className="text-primary">Brasil</span>
+            {isAdmin && (
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                · Admin
+              </span>
+            )}
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-6 md:flex">
-          <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition">
-            Home
-          </Link>
-          <Link href="/salas" className="text-sm text-muted-foreground hover:text-foreground transition">
-            Salas
-          </Link>
-          <Link href="/premium" className="text-sm text-muted-foreground hover:text-foreground transition">
-            Premium
-          </Link>
-        </nav>
+        {isAdmin ? (
+          <nav className="hidden items-center gap-6 md:flex">
+            <Link
+              href="/admin"
+              className="text-sm text-muted-foreground hover:text-foreground transition"
+            >
+              Painel
+            </Link>
+            <Link
+              href="/admin/salas"
+              className="text-sm text-muted-foreground hover:text-foreground transition"
+            >
+              Salas
+            </Link>
+            <Link
+              href="/admin/usuarios"
+              className="text-sm text-muted-foreground hover:text-foreground transition"
+            >
+              Usuários
+            </Link>
+          </nav>
+        ) : (
+          <nav className="hidden items-center gap-6 md:flex">
+            <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition">
+              Home
+            </Link>
+            <Link href="/salas" className="text-sm text-muted-foreground hover:text-foreground transition">
+              Salas
+            </Link>
+            <Link href="/premium" className="text-sm text-muted-foreground hover:text-foreground transition">
+              Premium
+            </Link>
+          </nav>
+        )}
 
         <div className="flex items-center gap-2">
           {loading ? (
             <div className="h-9 w-20 animate-pulse rounded-md bg-muted" />
+          ) : user && isAdmin ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
+                  <Avatar className="h-9 w-9">
+                    <AvatarFallback className="bg-primary/20 text-primary">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="flex flex-col">
+                  <span className="flex items-center gap-1">
+                    <Shield className="h-3 w-3 text-primary" />
+                    {profile?.display_name ?? profile?.username}
+                  </span>
+                  <span className="text-xs font-normal text-muted-foreground">
+                    {user.email}
+                  </span>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/admin">
+                    <Shield className="h-4 w-4" />
+                    Painel
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="h-4 w-4" />
+                  Sair
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : user ? (
             <>
               {isPremium && (
@@ -108,14 +177,6 @@ export function Header() {
                       <Link href="/salas/nova">
                         <Plus className="h-4 w-4" />
                         Criar sala
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
-                  {isAdmin && (
-                    <DropdownMenuItem asChild>
-                      <Link href="/admin">
-                        <Shield className="h-4 w-4" />
-                        Painel admin
                       </Link>
                     </DropdownMenuItem>
                   )}

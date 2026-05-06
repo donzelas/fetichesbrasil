@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useUser } from "@/hooks/useUser";
 import { Button } from "@/components/ui/button";
 
 const STORAGE_KEY = "fb_age_confirmed";
 
 export function AgeGate() {
+  const pathname = usePathname();
+  const { isAdmin, loading } = useUser();
   const [confirmed, setConfirmed] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -13,6 +17,9 @@ export function AgeGate() {
     setConfirmed(v === "1");
   }, []);
 
+  if (pathname?.startsWith("/admin")) return null;
+  if (loading) return null;
+  if (isAdmin) return null;
   if (confirmed === null || confirmed === true) return null;
 
   return (

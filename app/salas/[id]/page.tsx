@@ -36,15 +36,16 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, username, display_name, avatar_url, is_premium")
+    .select("id, username, display_name, avatar_url, is_premium, is_admin")
     .eq("id", user.id)
     .single();
 
   if (!profile) redirect("/login");
 
   const isOwner = room.owner_id === user.id;
+  const isAdmin = !!profile.is_admin;
 
-  if (room.is_premium_only && !profile.is_premium && !isOwner) {
+  if (room.is_premium_only && !profile.is_premium && !isOwner && !isAdmin) {
     return (
       <div className="container py-12">
         <div className="mx-auto max-w-md rounded-2xl border border-premium/30 bg-card p-8 text-center">
@@ -62,27 +63,31 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
     );
   }
 
-  const { data: messages } = await supabase
+  const { data: latestMessages } = await supabase
     .from("messages")
     .select("*, user:profiles(id, username, display_name, avatar_url)")
     .eq("room_id", id)
-    .order("created_at", { ascending: true })
-    .limit(200);
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  const messages = (latestMessages ?? []).slice().reverse();
 
   const fetish = room.fetish as unknown as
     | { name: string; category: { name: string; emoji: string | null } | null }
     | null;
 
+  const backHref = isAdmin ? "/admin/salas" : "/salas";
+
   return (
-    <div className="container py-4">
-      <Button asChild variant="ghost" size="sm" className="mb-3">
-        <Link href="/salas">
+    <div className="container flex h-[calc(100vh-4rem)] flex-col py-4">
+      <Button asChild variant="ghost" size="sm" className="mb-3 w-fit">
+        <Link href={backHref}>
           <ArrowLeft className="h-4 w-4" />
           Voltar
         </Link>
       </Button>
 
-      <div className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-2xl">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/50 bg-card shadow-2xl">
         <div className="flex items-center justify-between border-b border-border/50 bg-card/60 p-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
@@ -93,21 +98,22 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
               <p className="truncate text-sm text-muted-foreground">{room.description}</p>
             )}
           </div>
-          <LeaveRoomButton />
+          <LeaveRoomButton redirectTo={backHref} />
         </div>
 
-        <div className="flex h-[calc(100vh-16rem)] flex-col lg:flex-row">
-          <div className="flex flex-1 flex-col">
+        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+          <div className="flex min-h-0 flex-1 flex-col">
             <MessageList
               roomId={room.id}
               currentUserId={user.id}
-              initialMessages={(messages ?? []) as never}
+              initialMessages={messages as never}
             />
             <MessageInput roomId={room.id} userId={user.id} />
           </div>
 
           <PresenceList
             roomId={room.id}
+            invisible={isAdmin}
             user={{
               id: profile.id,
               username: profile.username ?? "user",

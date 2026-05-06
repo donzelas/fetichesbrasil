@@ -1,21 +1,23 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { ArrowLeft, Plus } from "lucide-react";
+import { createClient, getViewerOrRedirectAdmin } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { RoomCard } from "@/components/rooms/RoomCard";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 const ROOM_FIELDS =
   "id, name, description, is_premium_only, is_featured, active_users_count, unlock_message, fetish:fetishes(name, slug, category:categories(name, slug, emoji))";
 
 interface PageProps {
-  searchParams: Promise<{ categoria?: string; fetiche?: string }>;
+  searchParams: Promise<{ categoria?: string; fetiche?: string; usuarios?: string }>;
 }
 
 export default async function SalasPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const supabase = await createClient();
+  const viewer = await getViewerOrRedirectAdmin();
+  const initialViewer = { isPremium: viewer.isPremium, isAuthenticated: viewer.isAuthenticated };
 
   let query = supabase
     .from("chat_rooms")
@@ -27,7 +29,11 @@ export default async function SalasPage({ searchParams }: PageProps) {
   let title = "Todas as salas";
   let subtitle: string | undefined;
 
-  if (params.fetiche) {
+  if (params.usuarios === "true") {
+    query = query.not("owner_id", "is", null);
+    title = "Salas criadas pelos Usuários";
+    subtitle = "👥 Comunidade Premium";
+  } else if (params.fetiche) {
     const { data: f } = await supabase
       .from("fetishes")
       .select("id, name, category:categories(name, emoji)")
@@ -57,6 +63,13 @@ export default async function SalasPage({ searchParams }: PageProps) {
 
   return (
     <div className="container space-y-6 py-8">
+      <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit text-muted-foreground hover:text-foreground">
+        <Link href="/">
+          <ArrowLeft className="h-4 w-4" />
+          Voltar para home
+        </Link>
+      </Button>
+
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
@@ -74,9 +87,9 @@ export default async function SalasPage({ searchParams }: PageProps) {
       </div>
 
       {rooms && rooms.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {rooms.map((room) => (
-            <RoomCard key={room.id} room={room as never} />
+            <RoomCard key={room.id} room={room as never} initialViewer={initialViewer} />
           ))}
         </div>
       ) : (

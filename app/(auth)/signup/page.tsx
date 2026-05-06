@@ -26,24 +26,43 @@ export default function SignupPage() {
       return;
     }
     setLoading(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { username, display_name: username },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
+
+    const res = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, username }),
     });
-    setLoading(false);
-    if (error) {
-      toast.error("Falha ao criar conta", { description: error.message });
+    const payload = (await res.json().catch(() => ({}))) as {
+      error?: string;
+    };
+
+    if (!res.ok) {
+      setLoading(false);
+      toast.error("Falha ao criar conta", {
+        description: payload.error ?? "Tente novamente.",
+      });
       return;
     }
-    toast.success("Conta criada!", {
-      description: "Verifique seu email para confirmar.",
+
+    const supabase = createClient();
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
     });
-    router.push("/login");
+
+    setLoading(false);
+
+    if (signInError) {
+      toast.success("Conta criada!", {
+        description: "Faça login para continuar.",
+      });
+      router.push("/login");
+      return;
+    }
+
+    toast.success("Conta criada!", { description: "Bem-vindo(a)." });
+    router.push("/");
+    router.refresh();
   }
 
   return (

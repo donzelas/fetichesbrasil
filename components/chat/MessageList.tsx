@@ -27,8 +27,16 @@ export function MessageList({ roomId, currentUserId, initialMessages }: MessageL
 
   useEffect(() => {
     const supabase = createClient();
+    const channelName = `messages:${roomId}`;
+
+    for (const c of supabase.getChannels()) {
+      if (c.topic === `realtime:${channelName}`) {
+        supabase.removeChannel(c);
+      }
+    }
+
     const channel = supabase
-      .channel(`messages:${roomId}`)
+      .channel(channelName)
       .on(
         "postgres_changes",
         {
@@ -55,7 +63,7 @@ export function MessageList({ roomId, currentUserId, initialMessages }: MessageL
   }, [roomId]);
 
   return (
-    <div className="scrollbar-thin flex-1 space-y-4 overflow-y-auto p-4">
+    <div className="scrollbar-thin min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
       {messages.length === 0 && (
         <p className="text-center text-sm text-muted-foreground">
           Seja o primeiro a quebrar o gelo aqui...
