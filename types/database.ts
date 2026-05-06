@@ -265,6 +265,123 @@ export interface Database {
           }
         ];
       };
+      dm_threads: {
+        Row: {
+          id: string;
+          user_a_id: string | null;
+          user_b_id: string | null;
+          created_at: string;
+          last_message_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_a_id?: string | null;
+          user_b_id?: string | null;
+          created_at?: string;
+          last_message_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_a_id?: string | null;
+          user_b_id?: string | null;
+          created_at?: string;
+          last_message_at?: string | null;
+        };
+        Relationships: [];
+      };
+      dm_thread_participants: {
+        Row: {
+          thread_id: string;
+          user_id: string;
+          added_by: string | null;
+          added_at: string;
+          left_at: string | null;
+        };
+        Insert: {
+          thread_id: string;
+          user_id: string;
+          added_by?: string | null;
+          added_at?: string;
+          left_at?: string | null;
+        };
+        Update: {
+          thread_id?: string;
+          user_id?: string;
+          added_by?: string | null;
+          added_at?: string;
+          left_at?: string | null;
+        };
+        Relationships: [];
+      };
+      dm_messages: {
+        Row: {
+          id: string;
+          thread_id: string;
+          sender_id: string;
+          content: string | null;
+          created_at: string;
+          read_at: string | null;
+          image_path: string | null;
+          expires_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          thread_id: string;
+          sender_id: string;
+          content?: string | null;
+          created_at?: string;
+          read_at?: string | null;
+          image_path?: string | null;
+          expires_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          thread_id?: string;
+          sender_id?: string;
+          content?: string | null;
+          created_at?: string;
+          read_at?: string | null;
+          image_path?: string | null;
+          expires_at?: string | null;
+        };
+        Relationships: [];
+      };
+      user_reports: {
+        Row: {
+          id: string;
+          reporter_id: string;
+          reported_id: string;
+          room_id: string | null;
+          reason: string;
+          resolved: boolean;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          reporter_id: string;
+          reported_id: string;
+          room_id?: string | null;
+          reason: string;
+          resolved?: boolean;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          reporter_id?: string;
+          reported_id?: string;
+          room_id?: string | null;
+          reason?: string;
+          resolved?: boolean;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -276,6 +393,15 @@ export interface Database {
       join_room: { Args: { p_room_id: string }; Returns: undefined };
       leave_current_room: { Args: Record<PropertyKey, never>; Returns: undefined };
       soft_delete_room: { Args: { p_room_id: string }; Returns: undefined };
+      open_dm_thread: { Args: { p_other_user_id: string }; Returns: string };
+      add_dm_participant: {
+        Args: { p_thread_id: string; p_user_id: string };
+        Returns: undefined;
+      };
+      report_user: {
+        Args: { p_reported_id: string; p_reason: string; p_room_id?: string | null };
+        Returns: string;
+      };
     };
     Enums: {
       [_ in never]: never;

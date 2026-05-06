@@ -68,14 +68,36 @@ export function PresenceList({ roomId, user, invisible = false }: PresenceListPr
     };
   }, [roomId, user.id, user.username, user.display_name, user.avatar_url, invisible]);
 
+  const usersToShow = users;
+
   return (
-    <div className="flex max-h-40 min-h-0 flex-col border-t border-border/50 bg-card/40 p-4 lg:max-h-none lg:w-64 lg:border-l lg:border-t-0">
-      <h3 className="mb-3 flex shrink-0 items-center gap-2 text-sm font-semibold">
+    <div className="flex shrink-0 items-center gap-3 border-t border-border/50 bg-card/40 px-3 py-2 lg:flex-col lg:items-stretch lg:gap-0 lg:w-64 lg:shrink lg:border-l lg:border-t-0 lg:p-4">
+      <h3 className="flex shrink-0 items-center gap-1.5 text-sm font-semibold lg:mb-3 lg:gap-2">
         <Users className="h-4 w-4" />
-        Online ({users.length})
+        <span className="lg:hidden">{users.length}</span>
+        <span className="hidden lg:inline">Online ({users.length})</span>
       </h3>
-      <div className="scrollbar-thin min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
-        {users.map((u) => {
+
+      <div className="scrollbar-thin flex flex-1 items-center gap-2 overflow-x-auto lg:hidden">
+        {usersToShow.map((u) => {
+          const initial =
+            u.display_name?.charAt(0)?.toUpperCase() ??
+            u.username?.charAt(0)?.toUpperCase() ??
+            "?";
+          return (
+            <div key={u.user_id} className="relative shrink-0" title={u.display_name ?? u.username}>
+              <Avatar className="h-7 w-7">
+                {u.avatar_url && <AvatarImage src={u.avatar_url} />}
+                <AvatarFallback className="text-xs">{initial}</AvatarFallback>
+              </Avatar>
+              <span className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-green-500" />
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="scrollbar-thin hidden min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 lg:block">
+        {usersToShow.map((u) => {
           const initial =
             u.display_name?.charAt(0)?.toUpperCase() ??
             u.username?.charAt(0)?.toUpperCase() ??

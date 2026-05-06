@@ -14,7 +14,7 @@ const ROOM_FIELDS =
 
 export default async function HomePage() {
   const supabase = await createClient();
-  const viewer = await getViewerOrRedirectAdmin();
+  const viewer = await getViewerOrRedirectAdmin("/");
   const initialViewer = { isPremium: viewer.isPremium, isAuthenticated: viewer.isAuthenticated };
 
   const [

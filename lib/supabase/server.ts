@@ -60,11 +60,34 @@ export async function getViewer(): Promise<Viewer> {
 }
 
 /**
- * Use em páginas públicas (não-admin) para forçar admins a permanecerem em /admin.
+ * Exige usuário autenticado. Redireciona para /login se não estiver logado.
+ * Aceita usuários comuns e admin (use para páginas onde admin pode atuar como observador).
+ */
+export async function requireUser(redirectTo?: string): Promise<Viewer> {
+  const viewer = await getViewer();
+  if (!viewer.isAuthenticated) {
+    const url = redirectTo
+      ? `/login?redirect=${encodeURIComponent(redirectTo)}`
+      : "/login";
+    redirect(url);
+  }
+  return viewer;
+}
+
+/**
+ * Use em páginas públicas (não-admin) para:
+ *  - exigir login (redirect /login se não autenticado)
+ *  - forçar admins a permanecerem em /admin
  * Retorna o viewer já carregado para reuso na página.
  */
-export async function getViewerOrRedirectAdmin(): Promise<Viewer> {
+export async function getViewerOrRedirectAdmin(redirectTo?: string): Promise<Viewer> {
   const viewer = await getViewer();
+  if (!viewer.isAuthenticated) {
+    const url = redirectTo
+      ? `/login?redirect=${encodeURIComponent(redirectTo)}`
+      : "/login";
+    redirect(url);
+  }
   if (viewer.isAdmin) {
     redirect("/admin");
   }

@@ -1,26 +1,34 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
 
 interface LeaveRoomButtonProps {
   redirectTo?: string;
+  children: ReactNode;
+  className?: string;
+  ariaLabel?: string;
 }
 
-export function LeaveRoomButton({ redirectTo = "/" }: LeaveRoomButtonProps) {
+export function LeaveRoomButton({
+  redirectTo = "/",
+  children,
+  className,
+  ariaLabel,
+}: LeaveRoomButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   async function leave() {
+    if (loading) return;
     setLoading(true);
     const supabase = createClient();
     const { error } = await supabase.rpc("leave_current_room");
-    setLoading(false);
     if (error) {
+      setLoading(false);
       toast.error("Erro ao sair", { description: error.message });
       return;
     }
@@ -29,9 +37,15 @@ export function LeaveRoomButton({ redirectTo = "/" }: LeaveRoomButtonProps) {
   }
 
   return (
-    <Button onClick={leave} variant="outline" size="sm" disabled={loading}>
-      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
-      Sair da sala
-    </Button>
+    <button
+      type="button"
+      onClick={leave}
+      disabled={loading}
+      className={className}
+      aria-label={ariaLabel}
+      aria-busy={loading}
+    >
+      {children}
+    </button>
   );
 }

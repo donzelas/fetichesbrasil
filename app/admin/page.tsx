@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Crown, Flame, MessageSquare, Users } from "lucide-react";
+import { Crown, Flame, MessageCircle, MessageSquare, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -13,6 +13,7 @@ export default async function AdminHomePage() {
     { count: totalPremium },
     { count: totalRooms },
     { count: totalFeatured },
+    { count: totalDmThreads },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -32,6 +33,9 @@ export default async function AdminHomePage() {
       .select("*", { count: "exact", head: true })
       .eq("is_featured", true)
       .is("deleted_at", null),
+    supabase
+      .from("dm_threads")
+      .select("*", { count: "exact", head: true }),
   ]);
 
   const stats = [
@@ -39,6 +43,7 @@ export default async function AdminHomePage() {
     { label: "Usuários Premium", value: totalPremium ?? 0, icon: Crown },
     { label: "Salas ativas", value: totalRooms ?? 0, icon: MessageSquare },
     { label: "Salas em destaque", value: totalFeatured ?? 0, icon: Flame },
+    { label: "Chats individuais", value: totalDmThreads ?? 0, icon: MessageCircle },
   ];
 
   return (
@@ -48,7 +53,7 @@ export default async function AdminHomePage() {
         <p className="text-muted-foreground">Gestão geral da plataforma.</p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {stats.map((s) => (
           <Card key={s.label}>
             <CardContent className="flex items-center gap-3 py-5">
@@ -64,13 +69,23 @@ export default async function AdminHomePage() {
         ))}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-3">
         <Link href="/admin/salas" className="group">
           <Card className="transition hover:border-primary/50">
             <CardContent className="py-6">
               <h3 className="font-semibold group-hover:text-primary">Gerenciar salas</h3>
               <p className="mt-1 text-sm text-muted-foreground">
                 Marcar/desmarcar destaque, deletar salas problemáticas.
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/admin/mensagens" className="group">
+          <Card className="transition hover:border-primary/50">
+            <CardContent className="py-6">
+              <h3 className="font-semibold group-hover:text-primary">Chats individuais</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Ver conversas privadas e imagens (inclusive já expiradas).
               </p>
             </CardContent>
           </Card>

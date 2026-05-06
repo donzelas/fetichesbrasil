@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MessageList } from "@/components/chat/MessageList";
 import { MessageInput } from "@/components/chat/MessageInput";
-import { PresenceList } from "@/components/chat/PresenceList";
+import { OnlineUsers } from "@/components/chat/OnlineUsers";
+import { DmInbox } from "@/components/chat/DmInbox";
 import { LeaveRoomButton } from "@/components/chat/LeaveRoomButton";
 
 export const dynamic = "force-dynamic";
@@ -79,48 +80,63 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
   const backHref = isAdmin ? "/admin/salas" : "/salas";
 
   return (
-    <div className="container flex h-[calc(100vh-4rem)] flex-col py-4">
-      <Button asChild variant="ghost" size="sm" className="mb-3 w-fit">
-        <Link href={backHref}>
-          <ArrowLeft className="h-4 w-4" />
-          Voltar
-        </Link>
-      </Button>
+    <div className="container flex h-[calc(100vh-4rem)] flex-col px-2 py-2 sm:px-4 sm:py-4">
+      <LeaveRoomButton
+        redirectTo={backHref}
+        ariaLabel="Voltar"
+        className="mb-2 hidden w-fit items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50 sm:mb-3 sm:inline-flex"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Voltar
+      </LeaveRoomButton>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/50 bg-card shadow-2xl">
-        <div className="flex items-center justify-between border-b border-border/50 bg-card/60 p-4">
+        <div className="flex items-center justify-between gap-2 border-b border-border/50 bg-card/60 px-3 py-2 sm:p-4">
+          <LeaveRoomButton
+            redirectTo={backHref}
+            ariaLabel="Voltar"
+            className="-ml-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50 sm:hidden"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </LeaveRoomButton>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="truncate text-lg font-semibold">{room.name}</h1>
-              {fetish && <Badge variant="outline">{fetish.name}</Badge>}
+              <h1 className="truncate text-base font-semibold sm:text-lg">{room.name}</h1>
+              {fetish && (
+                <Badge variant="outline" className="hidden sm:inline-flex">
+                  {fetish.name}
+                </Badge>
+              )}
             </div>
             {room.description && (
-              <p className="truncate text-sm text-muted-foreground">{room.description}</p>
+              <p className="hidden truncate text-sm text-muted-foreground sm:block">
+                {room.description}
+              </p>
             )}
           </div>
-          <LeaveRoomButton redirectTo={backHref} />
+          <div className="flex shrink-0 items-center gap-1.5">
+            <DmInbox currentUserId={user.id} isAdmin={isAdmin} roomId={room.id} />
+            <OnlineUsers
+              roomId={room.id}
+              invisible={isAdmin}
+              isAdmin={isAdmin}
+              user={{
+                id: profile.id,
+                username: profile.username ?? "user",
+                display_name: profile.display_name ?? profile.username ?? "user",
+                avatar_url: profile.avatar_url,
+              }}
+            />
+          </div>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-          <div className="flex min-h-0 flex-1 flex-col">
-            <MessageList
-              roomId={room.id}
-              currentUserId={user.id}
-              initialMessages={messages as never}
-            />
-            <MessageInput roomId={room.id} userId={user.id} />
-          </div>
-
-          <PresenceList
+        <div className="flex min-h-0 flex-1 flex-col">
+          <MessageList
             roomId={room.id}
-            invisible={isAdmin}
-            user={{
-              id: profile.id,
-              username: profile.username ?? "user",
-              display_name: profile.display_name ?? profile.username ?? "user",
-              avatar_url: profile.avatar_url,
-            }}
+            currentUserId={user.id}
+            initialMessages={messages as never}
           />
+          <MessageInput roomId={room.id} userId={user.id} />
         </div>
       </div>
     </div>

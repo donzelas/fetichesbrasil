@@ -44,7 +44,7 @@ const benefits = [
 ];
 
 export default async function PremiumPage() {
-  await getViewerOrRedirectAdmin();
+  await getViewerOrRedirectAdmin("/premium");
   return (
     <div className="container max-w-5xl py-10">
       <div className="text-center">

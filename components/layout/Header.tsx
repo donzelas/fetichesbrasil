@@ -69,6 +69,12 @@ export function Header() {
               Salas
             </Link>
             <Link
+              href="/admin/mensagens"
+              className="text-sm text-muted-foreground hover:text-foreground transition"
+            >
+              Chats individuais
+            </Link>
+            <Link
               href="/admin/usuarios"
               className="text-sm text-muted-foreground hover:text-foreground transition"
             >

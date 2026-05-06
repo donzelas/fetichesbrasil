@@ -11,7 +11,7 @@ import { DeleteRoomButton } from "./delete-room-button";
 export const dynamic = "force-dynamic";
 
 export default async function PerfilPage() {
-  await getViewerOrRedirectAdmin();
+  await getViewerOrRedirectAdmin("/perfil");
   const supabase = await createClient();
   const {
     data: { user },

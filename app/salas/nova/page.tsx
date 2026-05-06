@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { CreateRoomForm } from "./form";
 
 export default async function NewRoomPage() {
-  await getViewerOrRedirectAdmin();
+  await getViewerOrRedirectAdmin("/salas/nova");
   const supabase = await createClient();
   const {
     data: { user },
