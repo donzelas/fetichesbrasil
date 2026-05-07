@@ -3,6 +3,16 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/types/database";
 
 /**
+ * Remove maxAge/expires para que os cookies de auth virem session cookies
+ * (apagados quando o navegador é fechado).
+ */
+function toSessionOnly(options: CookieOptions): CookieOptions {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { maxAge, expires, ...rest } = options;
+  return rest;
+}
+
+/**
  * Middleware leve: só repassa cookies (refresh de sessão) sem chamar
  * supabase.auth.getUser(). A validação de auth é feita nas próprias
  * páginas/layouts (Node runtime), evitando bug de TLS no Edge Runtime
@@ -26,7 +36,7 @@ export async function updateSession(request: NextRequest) {
           );
           supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, toSessionOnly(options))
           );
         },
       },

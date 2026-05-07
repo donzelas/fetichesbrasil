@@ -23,18 +23,16 @@ export async function PATCH(
     return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
   }
 
-  const body = (await request.json()) as { is_premium?: boolean; is_admin?: boolean };
+  const body = (await request.json()) as { is_premium?: boolean };
+
+  // is_admin nunca é alterável por API. Só pelo banco direto (Supabase SQL).
   const update: {
     is_premium?: boolean;
     premium_since?: string | null;
-    is_admin?: boolean;
   } = {};
   if (typeof body.is_premium === "boolean") {
     update.is_premium = body.is_premium;
     update.premium_since = body.is_premium ? new Date().toISOString() : null;
-  }
-  if (typeof body.is_admin === "boolean") {
-    update.is_admin = body.is_admin;
   }
 
   if (Object.keys(update).length === 0) {

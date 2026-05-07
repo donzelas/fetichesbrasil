@@ -57,7 +57,7 @@ export function BlogImageCarousel({ urls, alt = "Imagem do post", className }: B
                 e.stopPropagation();
                 prev();
               }}
-              className="absolute left-2 top-1/2 hidden -translate-y-1/2 rounded-full bg-black/60 p-2 text-white opacity-0 backdrop-blur-sm transition hover:bg-black/80 group-hover:opacity-100 sm:block"
+              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-2 text-white opacity-80 backdrop-blur-sm transition hover:bg-black/80 hover:opacity-100 active:scale-95 sm:opacity-0 sm:group-hover:opacity-100"
               aria-label="Imagem anterior"
             >
               <ChevronLeft className="h-5 w-5" />
@@ -68,7 +68,7 @@ export function BlogImageCarousel({ urls, alt = "Imagem do post", className }: B
                 e.stopPropagation();
                 next();
               }}
-              className="absolute right-2 top-1/2 hidden -translate-y-1/2 rounded-full bg-black/60 p-2 text-white opacity-0 backdrop-blur-sm transition hover:bg-black/80 group-hover:opacity-100 sm:block"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-2 text-white opacity-80 backdrop-blur-sm transition hover:bg-black/80 hover:opacity-100 active:scale-95 sm:opacity-0 sm:group-hover:opacity-100"
               aria-label="Próxima imagem"
             >
               <ChevronRight className="h-5 w-5" />

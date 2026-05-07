@@ -1,16 +1,35 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Crown } from "lucide-react";
-import { createClient, getViewerOrRedirectAdmin } from "@/lib/supabase/server";
+import { createClient, getViewer } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { FeaturedCardsCarousel } from "@/components/home/FeaturedCardsCarousel";
 import { HomeFeatureCards } from "@/components/home/HomeFeatureCards";
+import { LandingPage } from "@/components/landing/LandingPage";
 import { signBlogImagePaths } from "@/lib/blog/sign-images";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const supabase = await createClient();
-  const viewer = await getViewerOrRedirectAdmin("/");
+  const viewer = await getViewer();
+
+  if (!viewer.isAuthenticated) {
+    const [{ data: rpcOnline }, { data: rpcRooms }] = await Promise.all([
+      supabase.rpc("global_online_users"),
+      supabase.rpc("global_active_rooms"),
+    ]);
+    return (
+      <LandingPage
+        onlineUsers={typeof rpcOnline === "number" ? rpcOnline : 0}
+        activeRooms={typeof rpcRooms === "number" ? rpcRooms : 0}
+      />
+    );
+  }
+
+  if (viewer.isAdmin) {
+    redirect("/admin");
+  }
 
   const [
     { data: featuredCards },

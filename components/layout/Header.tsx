@@ -215,7 +215,7 @@ export function Header() {
                 <Link href="/login">Entrar</Link>
               </Button>
               <Button asChild size="sm" variant="gradient">
-                <Link href="/signup">Criar conta</Link>
+                <Link href="/cadastro">Criar conta</Link>
               </Button>
             </>
           )}

@@ -3,6 +3,7 @@ import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { AgeGate } from "@/components/layout/AgeGate";
+import { AutoLogout } from "@/components/auth/AutoLogout";
 import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
@@ -35,6 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="pt-BR" className="dark">
       <body className="min-h-screen bg-background font-sans antialiased">
         <AgeGate />
+        <AutoLogout />
         <div className="flex min-h-screen flex-col">
           <Header />
           <main className="flex-1">{children}</main>

@@ -1,4 +1,4 @@
-import { Trophy } from "lucide-react";
+import { Trophy, type LucideIcon } from "lucide-react";
 import { RoomCard } from "@/components/rooms/RoomCard";
 import type { ChatRoom } from "@/types/database";
 
@@ -12,9 +12,22 @@ type RoomForCard = Pick<
 interface TopActiveSectionProps {
   rooms: RoomForCard[];
   initialViewer?: { isPremium: boolean; isAuthenticated: boolean };
+  title?: string;
+  subtitle?: string;
+  icon?: LucideIcon;
+  iconClassName?: string;
+  showRank?: boolean;
 }
 
-export function TopActiveSection({ rooms, initialViewer }: TopActiveSectionProps) {
+export function TopActiveSection({
+  rooms,
+  initialViewer,
+  title = "Top fetiches em alta",
+  subtitle = "Salas mais acessadas das categorias em destaque",
+  icon: Icon = Trophy,
+  iconClassName = "h-6 w-6 text-premium",
+  showRank = false,
+}: TopActiveSectionProps) {
   if (rooms.length === 0) return null;
 
   return (
@@ -22,22 +35,20 @@ export function TopActiveSection({ rooms, initialViewer }: TopActiveSectionProps
       <div className="flex items-end justify-between">
         <div>
           <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
-            <Trophy className="h-6 w-6 text-premium" />
-            Top 15 mais acessadas agora
+            <Icon className={iconClassName} />
+            {title}
           </h2>
-          <p className="text-sm text-muted-foreground">
-            As salas com mais gente conectada neste momento
-          </p>
+          <p className="text-sm text-muted-foreground">{subtitle}</p>
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {rooms.map((room, idx) => (
           <RoomCard
             key={room.id}
             room={room}
             variant="compact"
-            showRank={idx + 1}
+            showRank={showRank ? idx + 1 : undefined}
             initialViewer={initialViewer}
           />
         ))}

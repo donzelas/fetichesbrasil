@@ -22,35 +22,26 @@ interface AdminUser {
 export function AdminUserRow({ user }: { user: AdminUser }) {
   const router = useRouter();
   const [premium, setPremium] = useState(user.is_premium);
-  const [admin, setAdmin] = useState(user.is_admin);
   const [pending, start] = useTransition();
   const initials = (user.display_name ?? user.username ?? "?").charAt(0).toUpperCase();
 
-  function update(payload: { is_premium?: boolean; is_admin?: boolean }) {
+  function togglePremium(v: boolean) {
+    setPremium(v);
     start(async () => {
       const res = await fetch(`/api/admin/users/${user.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ is_premium: v }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         toast.error("Erro", { description: j.error ?? res.statusText });
+        setPremium(!v);
         return;
       }
       toast.success("Atualizado");
       router.refresh();
     });
-  }
-
-  function togglePremium(v: boolean) {
-    setPremium(v);
-    update({ is_premium: v });
-  }
-
-  function toggleAdmin(v: boolean) {
-    setAdmin(v);
-    update({ is_admin: v });
   }
 
   return (
@@ -77,10 +68,6 @@ export function AdminUserRow({ user }: { user: AdminUser }) {
         <label className="flex items-center gap-2">
           Premium
           <Switch checked={premium} onCheckedChange={togglePremium} disabled={pending} />
-        </label>
-        <label className="flex items-center gap-2">
-          Admin
-          <Switch checked={admin} onCheckedChange={toggleAdmin} disabled={pending} />
         </label>
       </div>
     </div>

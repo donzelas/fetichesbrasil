@@ -135,6 +135,7 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
             roomId={room.id}
             currentUserId={user.id}
             initialMessages={messages as never}
+            isAdminView={isAdmin}
           />
           <MessageInput roomId={room.id} userId={user.id} />
         </div>

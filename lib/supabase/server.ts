@@ -3,6 +3,18 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Database } from "@/types/database";
 
+/**
+ * Remove maxAge/expires dos options dos cookies de auth, transformando-os
+ * em "session cookies" — eles são apagados quando o navegador é fechado.
+ * Combinado com AutoLogout client-side (5min sem foco), garante que o usuário
+ * sempre precisa logar novamente.
+ */
+function toSessionOnly(options: CookieOptions): CookieOptions {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { maxAge, expires, ...rest } = options;
+  return rest;
+}
+
 export async function createClient() {
   const cookieStore = await cookies();
 
@@ -17,7 +29,7 @@ export async function createClient() {
         setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
           try {
             cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options);
+              cookieStore.set(name, value, toSessionOnly(options));
             });
           } catch {
             // Server Components não podem setar cookies — ignorado em SSR puro

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Crown, MessageSquare, ShieldCheck } from "lucide-react";
+import { ChevronDown, Crown, ImageIcon, MessageSquare, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,7 @@ import { BlogImageCarousel } from "@/components/blog/BlogImageCarousel";
 import { AdminPostActions } from "@/components/admin/AdminPostActions";
 import { AdminCommentDeleteButton } from "@/components/admin/AdminCommentDeleteButton";
 import { signBlogImagePaths } from "@/lib/blog/sign-images";
-import { formatDate, formatRelativeTime } from "@/lib/utils/format";
+import { formatRelativeTime } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
 
 export const dynamic = "force-dynamic";
@@ -129,7 +129,7 @@ export default async function AdminPostsPage({ searchParams }: PageProps) {
   };
 
   return (
-    <div className="container max-w-5xl space-y-6 py-8">
+    <div className="container max-w-5xl space-y-4 py-6">
       <div className="flex items-center gap-2">
         <Button asChild variant="ghost" size="sm">
           <Link href="/admin">← Voltar</Link>
@@ -137,17 +137,19 @@ export default async function AdminPostsPage({ searchParams }: PageProps) {
       </div>
 
       <header>
-        <h1 className="text-3xl font-bold tracking-tight">Moderação do Blog</h1>
-        <p className="text-muted-foreground">Aprove, rejeite ou remova publicações da comunidade.</p>
+        <h1 className="text-2xl font-bold tracking-tight">Moderação do Blog</h1>
+        <p className="text-sm text-muted-foreground">
+          Aprove, rejeite ou remova publicações da comunidade.
+        </p>
       </header>
 
-      <nav className="flex flex-wrap gap-2 border-b border-border/60">
+      <nav className="flex flex-wrap gap-1 border-b border-border/60">
         {TABS.map((t) => (
           <Link
             key={t.id}
             href={`/admin/posts?tab=${t.id}`}
             className={cn(
-              "relative inline-flex items-center gap-2 px-4 py-2 text-sm font-medium transition",
+              "relative inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition",
               tab === t.id
                 ? "text-primary"
                 : "text-muted-foreground hover:text-foreground"
@@ -156,7 +158,7 @@ export default async function AdminPostsPage({ searchParams }: PageProps) {
             {t.label}
             <span
               className={cn(
-                "rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums",
+                "rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
                 tab === t.id ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
               )}
             >
@@ -170,11 +172,11 @@ export default async function AdminPostsPage({ searchParams }: PageProps) {
       </nav>
 
       {posts.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border/60 p-10 text-center">
+        <div className="rounded-xl border border-dashed border-border/60 p-8 text-center">
           <p className="text-sm text-muted-foreground">Nenhum post nesta aba.</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="divide-y divide-border/60 overflow-hidden rounded-xl border border-border/60 bg-card">
           {posts.map((p) => {
             const carouselUrls = p.image_paths.map((path) => imageUrls[path]).filter(Boolean);
             const author = p.author;
@@ -182,119 +184,159 @@ export default async function AdminPostsPage({ searchParams }: PageProps) {
               author?.display_name?.charAt(0)?.toUpperCase() ??
               author?.username?.charAt(0)?.toUpperCase() ??
               "?";
+            const thumb = carouselUrls[0];
+            const comments = commentsByPost.get(p.id) ?? [];
+
             return (
-              <article key={p.id} className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm">
-                <header className="flex flex-wrap items-start gap-3">
-                  <Avatar className="h-10 w-10">
+              <details key={p.id} className="group">
+                <summary className="flex cursor-pointer list-none items-center gap-3 p-3 transition hover:bg-muted/30">
+                  <Avatar className="h-8 w-8 shrink-0">
                     {author?.avatar_url && <AvatarImage src={author.avatar_url} />}
-                    <AvatarFallback>{initials}</AvatarFallback>
+                    <AvatarFallback className="text-xs">{initials}</AvatarFallback>
                   </Avatar>
+
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-semibold">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <span className="truncate font-semibold text-foreground">
                         {author?.display_name ?? author?.username ?? "anônimo"}
                       </span>
-                      <span className="text-xs text-muted-foreground">@{author?.username ?? "?"}</span>
                       {author?.is_premium && (
-                        <Badge className="gap-1 bg-amber-500/15 text-amber-600 hover:bg-amber-500/20">
-                          <Crown className="h-3 w-3" /> Premium
-                        </Badge>
+                        <Crown className="h-3 w-3 shrink-0 text-amber-500" aria-label="Premium" />
                       )}
-                      <Badge
-                        className={cn(
-                          "uppercase",
-                          p.status === "pending" && "bg-amber-500/15 text-amber-600 hover:bg-amber-500/20",
-                          p.status === "approved" && "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/20",
-                          p.status === "rejected" && "bg-rose-500/15 text-rose-600 hover:bg-rose-500/20"
-                        )}
-                      >
-                        {p.status}
-                      </Badge>
+                      <span>·</span>
+                      <span className="shrink-0">{formatRelativeTime(p.created_at)}</span>
+                      {p.is_pinned && (
+                        <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                          fixado
+                        </span>
+                      )}
                     </div>
-                    <div className="mt-0.5 text-xs text-muted-foreground">
-                      Criado em {formatDate(p.created_at)} ({formatRelativeTime(p.created_at)})
-                      {p.approved_at && (
-                        <>
-                          <span className="mx-1.5">·</span>
-                          Aprovado {formatRelativeTime(p.approved_at)}
-                        </>
-                      )}
+                    <div className="flex items-center gap-1.5">
+                      <p className="truncate text-sm font-medium">
+                        {p.title || <span className="text-muted-foreground">(sem título)</span>}
+                      </p>
+                    </div>
+                    <p className="line-clamp-1 text-xs text-muted-foreground">
+                      {p.content}
+                    </p>
+                  </div>
+
+                  <div className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+                    {carouselUrls.length > 0 && (
+                      <span className="inline-flex items-center gap-0.5" title={`${carouselUrls.length} imagem(ns)`}>
+                        <ImageIcon className="h-3 w-3" />
+                        {carouselUrls.length}
+                      </span>
+                    )}
+                    <span className="inline-flex items-center gap-0.5" title="Curtidas">
+                      <ShieldCheck className="h-3 w-3" />
+                      {p.like_count}
+                    </span>
+                    <span className="inline-flex items-center gap-0.5" title="Comentários">
+                      <MessageSquare className="h-3 w-3" />
+                      {p.comment_count}
+                    </span>
+                  </div>
+
+                  {thumb && (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={thumb}
+                      alt=""
+                      className="h-12 w-12 shrink-0 rounded-md border border-border/60 object-cover"
+                      loading="lazy"
+                    />
+                  )}
+
+                  <Badge
+                    className={cn(
+                      "shrink-0 uppercase",
+                      p.status === "pending" && "bg-amber-500/15 text-amber-600 hover:bg-amber-500/20",
+                      p.status === "approved" && "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/20",
+                      p.status === "rejected" && "bg-rose-500/15 text-rose-600 hover:bg-rose-500/20"
+                    )}
+                  >
+                    {p.status}
+                  </Badge>
+
+                  <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition group-open:rotate-180" />
+                </summary>
+
+                <div className="border-t border-border/60 bg-muted/10 p-4">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                    <span>
+                      @{author?.username ?? "?"}
                       {p.fetish && (
                         <>
                           <span className="mx-1.5">·</span>
                           {p.fetish.category?.emoji ?? ""} {p.fetish.name}
                         </>
                       )}
-                    </div>
+                      {p.approved_at && (
+                        <>
+                          <span className="mx-1.5">·</span>
+                          aprovado {formatRelativeTime(p.approved_at)}
+                        </>
+                      )}
+                    </span>
+                    <AdminPostActions postId={p.id} status={p.status} isPinned={p.is_pinned} />
                   </div>
-                  <AdminPostActions postId={p.id} status={p.status} isPinned={p.is_pinned} />
-                </header>
 
-                <div className="mt-3">
-                  <h3 className="text-base font-semibold">{p.title}</h3>
+                  <h3 className="text-sm font-semibold">{p.title}</h3>
                   <p className="mt-1 whitespace-pre-wrap break-words text-sm text-foreground/90">
                     {p.content}
                   </p>
-                </div>
 
-                {carouselUrls.length > 0 && (
-                  <div className="mt-3">
-                    <BlogImageCarousel urls={carouselUrls} alt={p.title} />
-                  </div>
-                )}
-
-                {p.rejection_reason && (
-                  <div className="mt-3 rounded-lg border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-600">
-                    <strong>Motivo da rejeição:</strong> {p.rejection_reason}
-                  </div>
-                )}
-
-                <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
-                  <span className="inline-flex items-center gap-1">
-                    <ShieldCheck className="h-3 w-3" /> {p.like_count} curtidas
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <MessageSquare className="h-3 w-3" /> {p.comment_count} comentários
-                  </span>
-                </div>
-
-                {p.status === "approved" && (commentsByPost.get(p.id)?.length ?? 0) > 0 && (
-                  <details className="mt-3 rounded-lg border border-border/60 bg-card/50 p-3 text-sm">
-                    <summary className="cursor-pointer font-medium">
-                      Comentários ({commentsByPost.get(p.id)?.length ?? 0})
-                    </summary>
-                    <div className="mt-3 space-y-2">
-                      {(commentsByPost.get(p.id) ?? []).map((c) => (
-                        <div
-                          key={c.id}
-                          className="flex items-start gap-2 rounded-lg bg-muted/40 p-2"
-                        >
-                          <Avatar className="h-7 w-7 shrink-0">
-                            {c.author?.avatar_url && <AvatarImage src={c.author.avatar_url} />}
-                            <AvatarFallback className="text-xs">
-                              {c.author?.display_name?.charAt(0)?.toUpperCase() ??
-                                c.author?.username?.charAt(0)?.toUpperCase() ??
-                                "?"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="min-w-0 flex-1">
-                            <div className="text-xs">
-                              <strong>
-                                {c.author?.display_name ?? c.author?.username ?? "anônimo"}
-                              </strong>
-                              <span className="ml-1 text-muted-foreground">
-                                · {formatRelativeTime(c.created_at)}
-                              </span>
-                            </div>
-                            <p className="whitespace-pre-wrap break-words text-sm">{c.content}</p>
-                          </div>
-                          <AdminCommentDeleteButton commentId={c.id} />
-                        </div>
-                      ))}
+                  {carouselUrls.length > 0 && (
+                    <div className="mt-3 max-w-md">
+                      <BlogImageCarousel urls={carouselUrls} alt={p.title} />
                     </div>
-                  </details>
-                )}
-              </article>
+                  )}
+
+                  {p.rejection_reason && (
+                    <div className="mt-3 rounded-lg border border-rose-500/40 bg-rose-500/10 p-2 text-xs text-rose-600">
+                      <strong>Motivo:</strong> {p.rejection_reason}
+                    </div>
+                  )}
+
+                  {p.status === "approved" && comments.length > 0 && (
+                    <div className="mt-3 rounded-lg border border-border/60 bg-card/50 p-3">
+                      <p className="mb-2 text-xs font-semibold text-muted-foreground">
+                        Comentários ({comments.length})
+                      </p>
+                      <div className="space-y-1.5">
+                        {comments.map((c) => (
+                          <div
+                            key={c.id}
+                            className="flex items-start gap-2 rounded-md bg-muted/40 p-1.5"
+                          >
+                            <Avatar className="h-6 w-6 shrink-0">
+                              {c.author?.avatar_url && <AvatarImage src={c.author.avatar_url} />}
+                              <AvatarFallback className="text-[10px]">
+                                {c.author?.display_name?.charAt(0)?.toUpperCase() ??
+                                  c.author?.username?.charAt(0)?.toUpperCase() ??
+                                  "?"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 flex-1">
+                              <div className="text-[11px]">
+                                <strong>
+                                  {c.author?.display_name ?? c.author?.username ?? "anônimo"}
+                                </strong>
+                                <span className="ml-1 text-muted-foreground">
+                                  · {formatRelativeTime(c.created_at)}
+                                </span>
+                              </div>
+                              <p className="whitespace-pre-wrap break-words text-xs">{c.content}</p>
+                            </div>
+                            <AdminCommentDeleteButton commentId={c.id} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </details>
             );
           })}
         </div>

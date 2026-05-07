@@ -6,6 +6,7 @@ import {
   MessageCircle,
   MessageSquare,
   Newspaper,
+  UserPlus,
   Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -21,6 +22,7 @@ export default async function AdminHomePage() {
     { count: totalPremium },
     { count: totalRooms },
     { count: totalFeatured },
+    { count: totalUserRooms },
     { count: totalDmThreads },
     { count: totalFeaturedCards },
     { count: pendingPosts },
@@ -43,6 +45,11 @@ export default async function AdminHomePage() {
       .from("chat_rooms")
       .select("*", { count: "exact", head: true })
       .eq("is_featured", true)
+      .is("deleted_at", null),
+    supabase
+      .from("chat_rooms")
+      .select("*", { count: "exact", head: true })
+      .not("owner_id", "is", null)
       .is("deleted_at", null),
     supabase
       .from("dm_threads")
@@ -68,6 +75,7 @@ export default async function AdminHomePage() {
     { label: "Usuários Premium", value: totalPremium ?? 0, icon: Crown },
     { label: "Salas ativas", value: totalRooms ?? 0, icon: MessageSquare },
     { label: "Salas em destaque", value: totalFeatured ?? 0, icon: Flame },
+    { label: "Salas de assinantes", value: totalUserRooms ?? 0, icon: UserPlus },
     { label: "Posts pendentes", value: pendingPosts ?? 0, icon: Newspaper, highlight: (pendingPosts ?? 0) > 0 },
     { label: "Posts aprovados", value: approvedPosts ?? 0, icon: Newspaper },
     { label: "Chats individuais", value: totalDmThreads ?? 0, icon: MessageCircle },
@@ -107,6 +115,21 @@ export default async function AdminHomePage() {
               <h3 className="font-semibold group-hover:text-primary">Gerenciar salas</h3>
               <p className="mt-1 text-sm text-muted-foreground">
                 Marcar/desmarcar destaque, deletar salas problemáticas.
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/admin/salas/usuarios" className="group">
+          <Card className="transition hover:border-primary/50">
+            <CardContent className="py-6">
+              <h3 className="flex items-center gap-2 font-semibold group-hover:text-primary">
+                Salas de assinantes
+                <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                  {totalUserRooms ?? 0}
+                </span>
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Salas criadas pela comunidade Premium — moderar, destacar ou remover.
               </p>
             </CardContent>
           </Card>

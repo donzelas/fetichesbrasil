@@ -15,9 +15,18 @@ interface MessageListProps {
   roomId: string;
   currentUserId: string;
   initialMessages: MessageWithUser[];
+  /** Quando true, aplica deslocamento por usuário (faixas) para o admin distinguir falantes. */
+  isAdminView?: boolean;
 }
 
-export function MessageList({ roomId, currentUserId, initialMessages }: MessageListProps) {
+const ADMIN_LANE_CLASSES = ["ml-0", "ml-8", "ml-16"] as const;
+
+export function MessageList({
+  roomId,
+  currentUserId,
+  initialMessages,
+  isAdminView = false,
+}: MessageListProps) {
   const [messages, setMessages] = useState<MessageWithUser[]>(initialMessages);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const didMountRef = useRef(false);
@@ -73,6 +82,20 @@ export function MessageList({ roomId, currentUserId, initialMessages }: MessageL
     };
   }, [roomId]);
 
+  // Faixas por usuário (apenas para admin): cada user_id ganha 0/1/2 conforme ordem de aparição.
+  const adminLaneByUser = (() => {
+    if (!isAdminView) return null;
+    const map = new Map<string, number>();
+    let next = 0;
+    for (const m of messages) {
+      if (!map.has(m.user_id)) {
+        map.set(m.user_id, next % ADMIN_LANE_CLASSES.length);
+        next += 1;
+      }
+    }
+    return map;
+  })();
+
   return (
     <div
       ref={containerRef}
@@ -89,10 +112,16 @@ export function MessageList({ roomId, currentUserId, initialMessages }: MessageL
           m.user?.display_name?.charAt(0)?.toUpperCase() ??
           m.user?.username?.charAt(0)?.toUpperCase() ??
           "?";
+        const adminLane = adminLaneByUser?.get(m.user_id) ?? 0;
+        const adminOffset = isAdminView ? ADMIN_LANE_CLASSES[adminLane] : "";
         return (
           <div
             key={m.id}
-            className={cn("flex gap-2", own ? "flex-row-reverse" : "flex-row")}
+            className={cn(
+              "flex gap-2",
+              own ? "flex-row-reverse" : "flex-row",
+              adminOffset
+            )}
           >
             <Avatar className="h-8 w-8 shrink-0">
               {m.user?.avatar_url && <AvatarImage src={m.user.avatar_url} />}

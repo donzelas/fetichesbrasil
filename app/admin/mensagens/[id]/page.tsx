@@ -90,6 +90,18 @@ export default async function AdminDmThreadDetail({
   if (thread.user_a) profileById.set(thread.user_a.id, thread.user_a);
   if (thread.user_b) profileById.set(thread.user_b.id, thread.user_b);
 
+  const ADMIN_LANE_CLASSES = ["ml-0", "ml-8", "ml-16"] as const;
+  const laneByUser = new Map<string, number>();
+  {
+    let next = 0;
+    for (const m of messages) {
+      if (!laneByUser.has(m.sender_id)) {
+        laneByUser.set(m.sender_id, next % ADMIN_LANE_CLASSES.length);
+        next += 1;
+      }
+    }
+  }
+
   const totalImages = messages.filter((m) => m.image_path).length;
   const expiredImages = messages.filter(
     (m) => m.image_path && m.expires_at && new Date(m.expires_at).getTime() < Date.now()
@@ -175,8 +187,11 @@ export default async function AdminDmThreadDetail({
             const expired =
               m.expires_at && new Date(m.expires_at).getTime() < Date.now();
 
+            const lane = laneByUser.get(m.sender_id) ?? 0;
+            const laneClass = ADMIN_LANE_CLASSES[lane];
+
             return (
-              <div key={m.id} className="flex gap-2">
+              <div key={m.id} className={cn("flex gap-2", laneClass)}>
                 <Avatar className="h-8 w-8 shrink-0">
                   {sender?.avatar_url && <AvatarImage src={sender.avatar_url} />}
                   <AvatarFallback className="text-[11px]">{initial}</AvatarFallback>

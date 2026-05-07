@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { ChevronRight, ImageIcon, MessageCircle } from "lucide-react";
+import { ChevronRight, ImageIcon, MessageCircle, MessagesSquare } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatRelativeTime } from "@/lib/utils/format";
 
 export const dynamic = "force-dynamic";
@@ -82,6 +81,9 @@ export default async function AdminDmThreadsPage() {
               const c = countsMap.get(t.id) ?? { total: 0, images: 0 };
               const a = t.user_a;
               const b = t.user_b;
+              const nameA = a?.display_name ?? a?.username ?? "Usuário removido";
+              const nameB = b?.display_name ?? b?.username ?? "Usuário removido";
+              const roomName = `${nameA} ↔ ${nameB}`;
               return (
                 <Link
                   key={t.id}
@@ -89,26 +91,11 @@ export default async function AdminDmThreadsPage() {
                   className="flex items-center justify-between gap-3 p-4 transition hover:bg-muted/30"
                 >
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex -space-x-2">
-                      <Avatar className="h-9 w-9 border-2 border-background">
-                        {a?.avatar_url && <AvatarImage src={a.avatar_url} />}
-                        <AvatarFallback className="text-xs">
-                          {(a?.display_name ?? a?.username ?? "?").charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <Avatar className="h-9 w-9 border-2 border-background">
-                        {b?.avatar_url && <AvatarImage src={b.avatar_url} />}
-                        <AvatarFallback className="text-xs">
-                          {(b?.display_name ?? b?.username ?? "?").charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+                      <MessagesSquare className="h-5 w-5" />
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">
-                        {a?.display_name ?? a?.username ?? "?"}
-                        <span className="mx-2 text-muted-foreground">↔</span>
-                        {b?.display_name ?? b?.username ?? "?"}
-                      </p>
+                      <p className="truncate text-sm font-semibold">{roomName}</p>
                       <p className="truncate text-xs text-muted-foreground">
                         @{a?.username ?? "?"} · @{b?.username ?? "?"}
                       </p>
