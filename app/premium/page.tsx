@@ -1,8 +1,6 @@
 import { Crown, Check, Sparkles, MessageCircle, Image as ImageIcon, Plus, Lock } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { getViewerOrRedirectAdmin } from "@/lib/supabase/server";
-import { ComingSoonButton } from "./coming-soon-button";
+import { createClient, getViewerOrRedirectAdmin } from "@/lib/supabase/server";
+import { PremiumPlans, type PublicPlan } from "./PremiumPlans";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +43,16 @@ const benefits = [
 
 export default async function PremiumPage() {
   await getViewerOrRedirectAdmin("/premium");
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("plans" as never)
+    .select("id, title, description, price_cents, payment_method, duration_days, sort_order, is_active, stripe_price_id")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .order("price_cents", { ascending: true });
+
+  const plans = (data ?? []) as unknown as PublicPlan[];
+
   return (
     <div className="container max-w-5xl py-10">
       <div className="text-center">
@@ -63,24 +71,7 @@ export default async function PremiumPage() {
         </p>
       </div>
 
-      <Card className="mx-auto mt-10 max-w-md border-premium/30 shadow-2xl shadow-premium/10">
-        <CardContent className="p-8 text-center">
-          <p className="text-sm uppercase tracking-wider text-premium font-bold">Plano Premium</p>
-          <div className="mt-3 flex items-baseline justify-center gap-1">
-            <span className="text-5xl font-bold">R$ —</span>
-            <span className="text-muted-foreground">/mês</span>
-          </div>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Cancele quando quiser. Sem fidelidade.
-          </p>
-
-          <ComingSoonButton />
-
-          <p className="mt-3 text-xs text-muted-foreground">
-            Pagamento seguro · Stripe (em breve)
-          </p>
-        </CardContent>
-      </Card>
+      <PremiumPlans plans={plans} />
 
       <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {benefits.map((b) => (

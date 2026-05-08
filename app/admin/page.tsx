@@ -6,6 +6,7 @@ import {
   MessageCircle,
   MessageSquare,
   Newspaper,
+  Tag,
   UserPlus,
   Users,
 } from "lucide-react";
@@ -183,6 +184,20 @@ export default async function AdminHomePage() {
               <h3 className="font-semibold group-hover:text-primary">Gerenciar usuários</h3>
               <p className="mt-1 text-sm text-muted-foreground">
                 Promover Premium manualmente, banir, ver detalhes.
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/admin/planos" className="group">
+          <Card className="transition hover:border-primary/50">
+            <CardContent className="py-6">
+              <h3 className="flex items-center gap-2 font-semibold group-hover:text-primary">
+                <Tag className="h-4 w-4" />
+                Planos Premium
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Criar/editar planos por valor, forma de pagamento (Pix/Cartão) e
+                duração em dias. Integração Stripe automática.
               </p>
             </CardContent>
           </Card>

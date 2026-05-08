@@ -10,8 +10,9 @@ import type { Database } from "@/types/database";
  * sempre precisa logar novamente.
  */
 function toSessionOnly(options: CookieOptions): CookieOptions {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { maxAge, expires, ...rest } = options;
+  const rest = { ...options };
+  delete (rest as { maxAge?: unknown }).maxAge;
+  delete (rest as { expires?: unknown }).expires;
   return rest;
 }
 

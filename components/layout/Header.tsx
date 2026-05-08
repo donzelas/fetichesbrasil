@@ -92,6 +92,12 @@ export function Header() {
             >
               Usuários
             </Link>
+            <Link
+              href="/admin/planos"
+              className="text-sm text-muted-foreground hover:text-foreground transition"
+            >
+              Planos
+            </Link>
           </nav>
         ) : (
           <nav className="hidden items-center gap-6 md:flex">
