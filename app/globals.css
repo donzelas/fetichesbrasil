@@ -49,9 +49,41 @@
   }
 }
 
+@layer base {
+  /* Proteção anti-print/save para imagens sensíveis (feed do blog).
+     Marcadas explicitamente para não bloquear avatares e ícones do site. */
+  img[data-protected="true"],
+  [data-protected="true"] img {
+    -webkit-user-drag: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    pointer-events: auto;
+  }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  @media print {
+    img[data-protected="true"],
+    [data-protected="true"] img,
+    [data-no-print="true"] {
+      display: none !important;
+      visibility: hidden !important;
+    }
+    body::after {
+      content: "Impressão desabilitada — FETICHESBRASIL.COM.BR";
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 700;
+    }
   }
 
   .gradient-premium {
