@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Eye, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils/cn";
@@ -114,35 +114,110 @@ function preventContext(e: React.MouseEvent | React.SyntheticEvent) {
   });
 }
 
+const SWIPE_THRESHOLD = 50;
+
 export function BlogImageCarousel({ urls, alt = "Imagem do post", className }: BlogImageCarouselProps) {
   const [index, setIndex] = useState(0);
   const [lightbox, setLightbox] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
   const hidden = useProtectionState();
+
+  const pointerStart = useRef<{ x: number; y: number } | null>(null);
+  const isSwiping = useRef(false);
+
+  const safeIndex = Math.min(index, Math.max(urls.length - 1, 0));
+
+  const prev = useCallback(() => {
+    setIndex((i) => (i - 1 + urls.length) % urls.length);
+  }, [urls.length]);
+
+  const next = useCallback(() => {
+    setIndex((i) => (i + 1) % urls.length);
+  }, [urls.length]);
+
+  // Navegação por teclado quando o lightbox está aberto
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        prev();
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        next();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        setLightbox(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightbox, prev, next]);
+
+  // Handlers de swipe (touch + mouse) via pointer events
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (urls.length <= 1) return;
+    pointerStart.current = { x: e.clientX, y: e.clientY };
+    isSwiping.current = false;
+    setDragOffset(0);
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!pointerStart.current) return;
+    const dx = e.clientX - pointerStart.current.x;
+    const dy = e.clientY - pointerStart.current.y;
+    if (!isSwiping.current && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) {
+      isSwiping.current = true;
+    }
+    if (isSwiping.current) {
+      setDragOffset(dx);
+    }
+  };
+
+  const onPointerEnd = (e: React.PointerEvent) => {
+    if (!pointerStart.current) return;
+    const dx = e.clientX - pointerStart.current.x;
+    const swiped = isSwiping.current;
+    pointerStart.current = null;
+    setDragOffset(0);
+    if (swiped) {
+      // impede que o click bubble (ex.: fechar lightbox / abrir lightbox)
+      e.preventDefault();
+      e.stopPropagation();
+      if (Math.abs(dx) > SWIPE_THRESHOLD) {
+        if (dx < 0) next();
+        else prev();
+      }
+      // pequeno delay para evitar disparo do onClick após swipe
+      setTimeout(() => {
+        isSwiping.current = false;
+      }, 0);
+    }
+  };
 
   if (!urls.length) return null;
 
-  const safeIndex = Math.min(index, urls.length - 1);
   const current = urls[safeIndex];
-
-  function prev() {
-    setIndex((i) => (i - 1 + urls.length) % urls.length);
-  }
-  function next() {
-    setIndex((i) => (i + 1) % urls.length);
-  }
 
   return (
     <>
       <div
         className={cn(
-          "group relative aspect-video overflow-hidden rounded-xl border border-border/50 bg-muted select-none",
+          "group relative aspect-video overflow-hidden rounded-xl border border-border/50 bg-muted select-none touch-pan-y",
           className
         )}
         onContextMenu={preventContext}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerEnd}
+        onPointerCancel={onPointerEnd}
       >
         <button
           type="button"
-          onClick={() => setLightbox(true)}
+          onClick={() => {
+            if (isSwiping.current) return;
+            setLightbox(true);
+          }}
           className="block h-full w-full"
           aria-label="Abrir imagem"
         >
@@ -152,13 +227,18 @@ export function BlogImageCarousel({ urls, alt = "Imagem do post", className }: B
             alt={alt}
             data-protected="true"
             className={cn(
-              "h-full w-full object-cover transition group-hover:scale-[1.02]",
+              "h-full w-full object-cover transition",
+              !dragOffset && "group-hover:scale-[1.02]",
               hidden && "blur-2xl scale-110"
             )}
+            style={{
+              ...PROTECTED_IMG_STYLE,
+              transform: dragOffset ? `translateX(${dragOffset}px)` : undefined,
+              transition: dragOffset ? "none" : undefined,
+            }}
             draggable={false}
             onContextMenu={preventContext}
             onDragStart={(e) => e.preventDefault()}
-            style={PROTECTED_IMG_STYLE}
           />
         </button>
 
@@ -217,9 +297,16 @@ export function BlogImageCarousel({ urls, alt = "Imagem do post", className }: B
 
       {lightbox && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4 select-none"
-          onClick={() => setLightbox(false)}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4 select-none touch-pan-y"
+          onClick={() => {
+            if (isSwiping.current) return;
+            setLightbox(false);
+          }}
           onContextMenu={preventContext}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerEnd}
+          onPointerCancel={onPointerEnd}
         >
           <button
             type="button"
@@ -268,13 +355,18 @@ export function BlogImageCarousel({ urls, alt = "Imagem do post", className }: B
               alt={alt}
               data-protected="true"
               className={cn(
-                "max-h-[90vh] max-w-[95vw] rounded-lg object-contain transition",
-                hidden && "blur-3xl"
+                "max-h-[90vh] max-w-[95vw] rounded-lg object-contain",
+                hidden && "blur-3xl",
+                !dragOffset && "transition"
               )}
               draggable={false}
               onContextMenu={preventContext}
               onDragStart={(e) => e.preventDefault()}
-              style={PROTECTED_IMG_STYLE}
+              style={{
+                ...PROTECTED_IMG_STYLE,
+                transform: dragOffset ? `translateX(${dragOffset}px)` : undefined,
+                transition: dragOffset ? "none" : undefined,
+              }}
             />
 
             {hidden && (
