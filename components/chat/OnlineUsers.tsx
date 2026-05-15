@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Flag, MessageCircle, User, Users } from "lucide-react";
+import { Flag, MessageCircle, Users } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -157,15 +157,16 @@ export function OnlineUsers({ roomId, user, invisible = false, isAdmin = false }
                   className="flex items-center justify-between gap-2 rounded-lg border border-border/40 bg-background/40 p-3"
                 >
                   <div className="flex min-w-0 items-center gap-2">
-                    <div className="relative shrink-0">
-                      <Avatar className="h-9 w-9">
-                        {u.avatar_url && <AvatarImage src={u.avatar_url} />}
-                        <AvatarFallback className="text-xs">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-green-500" />
-                    </div>
+                    {u.avatar_url ? (
+                      <div className="relative shrink-0">
+                        <Avatar className="h-9 w-9">
+                          <AvatarImage src={u.avatar_url} />
+                        </Avatar>
+                        <span className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-green-500" />
+                      </div>
+                    ) : (
+                      <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-green-500" />
+                    )}
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">
                         {u.display_name ?? u.username}

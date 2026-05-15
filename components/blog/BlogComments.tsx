@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Send, Trash2, Flag, User } from "lucide-react";
+import { Loader2, Send, Trash2, Flag } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { BlogReportDialog } from "./BlogReportDialog";
@@ -147,12 +147,11 @@ export function BlogComments({
           comments.map((c) => {
             return (
               <div key={c.id} className="flex gap-3">
-                <Avatar className="h-8 w-8 shrink-0">
-                  {c.author?.avatar_url && <AvatarImage src={c.author.avatar_url} />}
-                  <AvatarFallback className="text-xs">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                  </AvatarFallback>
-                </Avatar>
+                {c.author?.avatar_url && (
+                  <Avatar className="h-8 w-8 shrink-0">
+                    <AvatarImage src={c.author.avatar_url} />
+                  </Avatar>
+                )}
                 <div className="flex-1 min-w-0 rounded-2xl bg-muted/40 px-3 py-2">
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="text-sm font-semibold">

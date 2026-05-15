@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { ChevronDown, Crown, ImageIcon, MessageSquare, ShieldCheck, User } from "lucide-react";
+import { ChevronDown, Crown, ImageIcon, MessageSquare, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BlogImageCarousel } from "@/components/blog/BlogImageCarousel";
@@ -186,12 +186,11 @@ export default async function AdminPostsPage({ searchParams }: PageProps) {
             return (
               <details key={p.id} className="group">
                 <summary className="flex cursor-pointer list-none items-center gap-3 p-3 transition hover:bg-muted/30">
-                  <Avatar className="h-8 w-8 shrink-0">
-                    {author?.avatar_url && <AvatarImage src={author.avatar_url} />}
-                    <AvatarFallback className="text-xs">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                    </AvatarFallback>
-                  </Avatar>
+                  {author?.avatar_url && (
+                    <Avatar className="h-8 w-8 shrink-0">
+                      <AvatarImage src={author.avatar_url} />
+                    </Avatar>
+                  )}
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -308,12 +307,11 @@ export default async function AdminPostsPage({ searchParams }: PageProps) {
                             key={c.id}
                             className="flex items-start gap-2 rounded-md bg-muted/40 p-1.5"
                           >
-                            <Avatar className="h-6 w-6 shrink-0">
-                              {c.author?.avatar_url && <AvatarImage src={c.author.avatar_url} />}
-                              <AvatarFallback className="text-[10px]">
-                                <User className="h-3 w-3 text-muted-foreground" />
-                              </AvatarFallback>
-                            </Avatar>
+                            {c.author?.avatar_url && (
+                              <Avatar className="h-6 w-6 shrink-0">
+                                <AvatarImage src={c.author.avatar_url} />
+                              </Avatar>
+                            )}
                             <div className="min-w-0 flex-1">
                               <div className="text-[11px]">
                                 <strong>

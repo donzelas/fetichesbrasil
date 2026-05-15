@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Camera, ImageIcon, Loader2, Send, Timer, User, UserPlus, X } from "lucide-react";
+import { Camera, ImageIcon, Loader2, Send, Timer, UserPlus, X } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -385,23 +385,13 @@ export function DmDialog({
       <DialogContent className="flex h-[100dvh] max-h-none w-full max-w-full flex-col gap-0 overflow-hidden rounded-none border-0 p-0 sm:h-[85vh] sm:max-h-[640px] sm:max-w-md sm:rounded-2xl sm:border">
         <DialogHeader className="flex flex-row items-center gap-3 space-y-0 border-b border-border/50 bg-card/60 p-4 pr-20 text-left">
           <div className="flex shrink-0 -space-x-2">
-            {previewParticipants.length === 0 && (
-              <Avatar className="h-10 w-10">
-                <AvatarFallback>
-                  <User className="h-5 w-5 text-muted-foreground" />
-                </AvatarFallback>
-              </Avatar>
-            )}
-            {previewParticipants.map((p) => {
-              return (
+            {previewParticipants
+              .filter((p) => p.avatar_url)
+              .map((p) => (
                 <Avatar key={p.id} className="h-10 w-10 border-2 border-card">
-                  {p.avatar_url && <AvatarImage src={p.avatar_url} />}
-                  <AvatarFallback>
-                    <User className="h-5 w-5 text-muted-foreground" />
-                  </AvatarFallback>
+                  <AvatarImage src={p.avatar_url ?? undefined} />
                 </Avatar>
-              );
-            })}
+              ))}
             {remainingCount > 0 && (
               <span className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-card bg-muted text-xs font-semibold">
                 +{remainingCount}

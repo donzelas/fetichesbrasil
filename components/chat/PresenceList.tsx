@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { User, Users } from "lucide-react";
+import { Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 
 type PresenceUser = {
   user_id: string;
@@ -80,13 +80,11 @@ export function PresenceList({ roomId, user, invisible = false }: PresenceListPr
 
       <div className="scrollbar-thin flex flex-1 items-center gap-2 overflow-x-auto lg:hidden">
         {usersToShow.map((u) => {
+          if (!u.avatar_url) return null;
           return (
             <div key={u.user_id} className="relative shrink-0" title={u.display_name ?? u.username}>
               <Avatar className="h-7 w-7">
-                {u.avatar_url && <AvatarImage src={u.avatar_url} />}
-                <AvatarFallback className="text-xs">
-                  <User className="h-3.5 w-3.5 text-muted-foreground" />
-                </AvatarFallback>
+                <AvatarImage src={u.avatar_url} />
               </Avatar>
               <span className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-green-500" />
             </div>
@@ -98,15 +96,16 @@ export function PresenceList({ roomId, user, invisible = false }: PresenceListPr
         {usersToShow.map((u) => {
           return (
             <div key={u.user_id} className="flex items-center gap-2 text-sm">
-              <div className="relative">
-                <Avatar className="h-7 w-7">
-                  {u.avatar_url && <AvatarImage src={u.avatar_url} />}
-                  <AvatarFallback className="text-xs">
-                    <User className="h-3.5 w-3.5 text-muted-foreground" />
-                  </AvatarFallback>
-                </Avatar>
-                <span className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-green-500" />
-              </div>
+              {u.avatar_url ? (
+                <div className="relative">
+                  <Avatar className="h-7 w-7">
+                    <AvatarImage src={u.avatar_url} />
+                  </Avatar>
+                  <span className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-green-500" />
+                </div>
+              ) : (
+                <span className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
+              )}
               <span className="truncate">{u.display_name ?? u.username}</span>
             </div>
           );

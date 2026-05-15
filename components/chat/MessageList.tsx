@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { formatTime } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
 import type { Message, Profile } from "@/types/database";
@@ -120,12 +119,11 @@ export function MessageList({
               adminOffset
             )}
           >
-            <Avatar className="h-8 w-8 shrink-0">
-              {m.user?.avatar_url && <AvatarImage src={m.user.avatar_url} />}
-              <AvatarFallback className="text-xs">
-                <User className="h-4 w-4 text-muted-foreground" />
-              </AvatarFallback>
-            </Avatar>
+            {m.user?.avatar_url && (
+              <Avatar className="h-8 w-8 shrink-0">
+                <AvatarImage src={m.user.avatar_url} />
+              </Avatar>
+            )}
             <div className={cn("flex max-w-[75%] flex-col gap-1", own && "items-end")}>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span>{m.user?.display_name ?? m.user?.username ?? "—"}</span>

@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Crown, User } from "lucide-react";
+import { Crown } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 
@@ -46,12 +46,11 @@ export function AdminUserRow({ user }: { user: AdminUser }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 p-4">
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <Avatar className="h-9 w-9">
-          {user.avatar_url && <AvatarImage src={user.avatar_url} />}
-          <AvatarFallback className="text-xs">
-            <User className="h-4 w-4 text-muted-foreground" />
-          </AvatarFallback>
-        </Avatar>
+        {user.avatar_url && (
+          <Avatar className="h-9 w-9">
+            <AvatarImage src={user.avatar_url} />
+          </Avatar>
+        )}
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <p className="truncate font-medium">{user.display_name ?? user.username}</p>

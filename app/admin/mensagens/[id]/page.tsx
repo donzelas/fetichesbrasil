@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ImageIcon, User } from "lucide-react";
+import { ArrowLeft, ImageIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatTime } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
@@ -121,18 +121,16 @@ export default async function AdminDmThreadDetail({
         <CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">
           <div className="flex items-center gap-3">
             <div className="flex -space-x-2">
-              <Avatar className="h-10 w-10 border-2 border-background">
-                {thread.user_a?.avatar_url && <AvatarImage src={thread.user_a.avatar_url} />}
-                <AvatarFallback>
-                  <User className="h-5 w-5 text-muted-foreground" />
-                </AvatarFallback>
-              </Avatar>
-              <Avatar className="h-10 w-10 border-2 border-background">
-                {thread.user_b?.avatar_url && <AvatarImage src={thread.user_b.avatar_url} />}
-                <AvatarFallback>
-                  <User className="h-5 w-5 text-muted-foreground" />
-                </AvatarFallback>
-              </Avatar>
+              {thread.user_a?.avatar_url && (
+                <Avatar className="h-10 w-10 border-2 border-background">
+                  <AvatarImage src={thread.user_a.avatar_url} />
+                </Avatar>
+              )}
+              {thread.user_b?.avatar_url && (
+                <Avatar className="h-10 w-10 border-2 border-background">
+                  <AvatarImage src={thread.user_b.avatar_url} />
+                </Avatar>
+              )}
             </div>
             <div>
               <h1 className="text-lg font-semibold">
@@ -185,12 +183,11 @@ export default async function AdminDmThreadDetail({
 
             return (
               <div key={m.id} className={cn("flex gap-2", laneClass)}>
-                <Avatar className="h-8 w-8 shrink-0">
-                  {sender?.avatar_url && <AvatarImage src={sender.avatar_url} />}
-                  <AvatarFallback className="text-[11px]">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                  </AvatarFallback>
-                </Avatar>
+                {sender?.avatar_url && (
+                  <Avatar className="h-8 w-8 shrink-0">
+                    <AvatarImage src={sender.avatar_url} />
+                  </Avatar>
+                )}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span className="font-medium text-foreground">

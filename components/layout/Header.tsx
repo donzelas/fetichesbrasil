@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Crown, LogOut, Plus, Shield, User as UserIcon, Sparkles } from "lucide-react";
+import { ChevronDown, Crown, LogOut, Plus, Shield, User as UserIcon, Sparkles } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -117,12 +117,11 @@ export function Header() {
           ) : user && isAdmin ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
-                  <Avatar className="h-9 w-9">
-                    <AvatarFallback className="bg-primary/20 text-primary">
-                      <Shield className="h-4 w-4" />
-                    </AvatarFallback>
-                  </Avatar>
+                <Button variant="ghost" size="sm" className="gap-1.5">
+                  <span className="max-w-[140px] truncate">
+                    {profile?.display_name ?? profile?.username ?? "Admin"}
+                  </span>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -167,14 +166,20 @@ export function Header() {
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
-                    <Avatar className="h-9 w-9">
-                      {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
-                      <AvatarFallback>
-                        <UserIcon className="h-4 w-4 text-muted-foreground" />
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
+                  {profile?.avatar_url ? (
+                    <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src={profile.avatar_url} />
+                      </Avatar>
+                    </Button>
+                  ) : (
+                    <Button variant="ghost" size="sm" className="gap-1.5">
+                      <span className="max-w-[140px] truncate">
+                        {profile?.display_name ?? profile?.username ?? "Conta"}
+                      </span>
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  )}
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel className="flex flex-col">

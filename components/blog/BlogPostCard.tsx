@@ -3,10 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Crown, Flag, MessageCircle, MoreVertical, Trash2, User } from "lucide-react";
+import { Crown, Flag, MessageCircle, MoreVertical, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils/cn";
 import { formatRelativeTime } from "@/lib/utils/format";
@@ -101,14 +101,13 @@ export function BlogPostCard({
       )}
     >
       <header className="flex items-start gap-3">
-        <Link href={`/u/${author?.username ?? ""}`} className="shrink-0">
-          <Avatar className="h-10 w-10">
-            {author?.avatar_url && <AvatarImage src={author.avatar_url} />}
-            <AvatarFallback>
-              <User className="h-5 w-5 text-muted-foreground" />
-            </AvatarFallback>
-          </Avatar>
-        </Link>
+        {author?.avatar_url && (
+          <Link href={`/u/${author.username ?? ""}`} className="shrink-0">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={author.avatar_url} />
+            </Avatar>
+          </Link>
+        )}
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
