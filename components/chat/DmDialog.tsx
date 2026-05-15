@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Camera, ImageIcon, Loader2, Send, Timer, UserPlus, X } from "lucide-react";
+import { Camera, ImageIcon, Loader2, Send, Timer, User, UserPlus, X } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -387,15 +387,18 @@ export function DmDialog({
           <div className="flex shrink-0 -space-x-2">
             {previewParticipants.length === 0 && (
               <Avatar className="h-10 w-10">
-                <AvatarFallback>?</AvatarFallback>
+                <AvatarFallback>
+                  <User className="h-5 w-5 text-muted-foreground" />
+                </AvatarFallback>
               </Avatar>
             )}
             {previewParticipants.map((p) => {
-              const init = (p.display_name ?? p.username ?? "?").charAt(0).toUpperCase();
               return (
                 <Avatar key={p.id} className="h-10 w-10 border-2 border-card">
                   {p.avatar_url && <AvatarImage src={p.avatar_url} />}
-                  <AvatarFallback>{init}</AvatarFallback>
+                  <AvatarFallback>
+                    <User className="h-5 w-5 text-muted-foreground" />
+                  </AvatarFallback>
                 </Avatar>
               );
             })}

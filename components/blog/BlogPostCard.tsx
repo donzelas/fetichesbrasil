@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Crown, Flag, MessageCircle, MoreVertical, Trash2 } from "lucide-react";
+import { Crown, Flag, MessageCircle, MoreVertical, Trash2, User } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -67,10 +67,6 @@ export function BlogPostCard({
 
   const carouselUrls = post.image_paths.map((p) => imageUrls[p]).filter(Boolean);
   const author = post.author;
-  const initials =
-    author?.display_name?.charAt(0)?.toUpperCase() ??
-    author?.username?.charAt(0)?.toUpperCase() ??
-    "?";
 
   async function handleDeleteAdmin() {
     const supabase = createClient();
@@ -108,7 +104,9 @@ export function BlogPostCard({
         <Link href={`/u/${author?.username ?? ""}`} className="shrink-0">
           <Avatar className="h-10 w-10">
             {author?.avatar_url && <AvatarImage src={author.avatar_url} />}
-            <AvatarFallback>{initials}</AvatarFallback>
+            <AvatarFallback>
+              <User className="h-5 w-5 text-muted-foreground" />
+            </AvatarFallback>
           </Avatar>
         </Link>
 

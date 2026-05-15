@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronDown, Crown, ImageIcon, MessageSquare, ShieldCheck } from "lucide-react";
+import { ChevronDown, Crown, ImageIcon, MessageSquare, ShieldCheck, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -180,10 +180,6 @@ export default async function AdminPostsPage({ searchParams }: PageProps) {
           {posts.map((p) => {
             const carouselUrls = p.image_paths.map((path) => imageUrls[path]).filter(Boolean);
             const author = p.author;
-            const initials =
-              author?.display_name?.charAt(0)?.toUpperCase() ??
-              author?.username?.charAt(0)?.toUpperCase() ??
-              "?";
             const thumb = carouselUrls[0];
             const comments = commentsByPost.get(p.id) ?? [];
 
@@ -192,7 +188,9 @@ export default async function AdminPostsPage({ searchParams }: PageProps) {
                 <summary className="flex cursor-pointer list-none items-center gap-3 p-3 transition hover:bg-muted/30">
                   <Avatar className="h-8 w-8 shrink-0">
                     {author?.avatar_url && <AvatarImage src={author.avatar_url} />}
-                    <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                    <AvatarFallback className="text-xs">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                    </AvatarFallback>
                   </Avatar>
 
                   <div className="min-w-0 flex-1">
@@ -313,9 +311,7 @@ export default async function AdminPostsPage({ searchParams }: PageProps) {
                             <Avatar className="h-6 w-6 shrink-0">
                               {c.author?.avatar_url && <AvatarImage src={c.author.avatar_url} />}
                               <AvatarFallback className="text-[10px]">
-                                {c.author?.display_name?.charAt(0)?.toUpperCase() ??
-                                  c.author?.username?.charAt(0)?.toUpperCase() ??
-                                  "?"}
+                                <User className="h-3 w-3 text-muted-foreground" />
                               </AvatarFallback>
                             </Avatar>
                             <div className="min-w-0 flex-1">

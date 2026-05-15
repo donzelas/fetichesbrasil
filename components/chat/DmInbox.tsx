@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -193,10 +193,6 @@ export function DmInbox({ currentUserId, isAdmin = false, roomId }: DmInboxProps
 
           <div className="scrollbar-thin max-h-80 space-y-2 overflow-y-auto pr-1">
             {threads.map((t) => {
-              const initial =
-                t.other.display_name?.charAt(0)?.toUpperCase() ??
-                t.other.username?.charAt(0)?.toUpperCase() ??
-                "?";
               return (
                 <button
                   key={t.id}
@@ -210,7 +206,9 @@ export function DmInbox({ currentUserId, isAdmin = false, roomId }: DmInboxProps
                   <div className="flex min-w-0 items-center gap-2">
                     <Avatar className="h-9 w-9 shrink-0">
                       {t.other.avatar_url && <AvatarImage src={t.other.avatar_url} />}
-                      <AvatarFallback className="text-xs">{initial}</AvatarFallback>
+                      <AvatarFallback className="text-xs">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                      </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">

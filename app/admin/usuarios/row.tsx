@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Crown } from "lucide-react";
+import { Crown, User } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
@@ -23,7 +23,6 @@ export function AdminUserRow({ user }: { user: AdminUser }) {
   const router = useRouter();
   const [premium, setPremium] = useState(user.is_premium);
   const [pending, start] = useTransition();
-  const initials = (user.display_name ?? user.username ?? "?").charAt(0).toUpperCase();
 
   function togglePremium(v: boolean) {
     setPremium(v);
@@ -49,7 +48,9 @@ export function AdminUserRow({ user }: { user: AdminUser }) {
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <Avatar className="h-9 w-9">
           {user.avatar_url && <AvatarImage src={user.avatar_url} />}
-          <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+          <AvatarFallback className="text-xs">
+            <User className="h-4 w-4 text-muted-foreground" />
+          </AvatarFallback>
         </Avatar>
         <div className="min-w-0">
           <div className="flex items-center gap-2">

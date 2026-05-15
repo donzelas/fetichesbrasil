@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Crown, Plus, Trash2 } from "lucide-react";
+import { Crown, Plus, Trash2, User } from "lucide-react";
 import { createClient, getViewerOrRedirectAdmin } from "@/lib/supabase/server";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -33,15 +33,15 @@ export default async function PerfilPage() {
     .is("deleted_at", null)
     .maybeSingle();
 
-  const initials = (profile.display_name ?? profile.username ?? "?").charAt(0).toUpperCase();
-
   return (
     <div className="container max-w-3xl space-y-6 py-8">
       <Card>
         <CardContent className="flex flex-col items-center gap-4 pt-8 sm:flex-row sm:items-start">
           <Avatar className="h-20 w-20">
             {profile.avatar_url && <AvatarImage src={profile.avatar_url} />}
-            <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
+            <AvatarFallback className="text-2xl">
+              <User className="h-10 w-10 text-muted-foreground" />
+            </AvatarFallback>
           </Avatar>
           <div className="flex-1 text-center sm:text-left">
             <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">

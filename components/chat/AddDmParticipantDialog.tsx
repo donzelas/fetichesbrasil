@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, UserPlus } from "lucide-react";
+import { Loader2, User, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -156,10 +156,6 @@ export function AddDmParticipantDialog({
           )}
 
           {candidates.map((u) => {
-            const initial =
-              u.display_name?.charAt(0)?.toUpperCase() ??
-              u.username?.charAt(0)?.toUpperCase() ??
-              "?";
             return (
               <div
                 key={u.user_id}
@@ -169,7 +165,9 @@ export function AddDmParticipantDialog({
                   <div className="relative shrink-0">
                     <Avatar className="h-8 w-8">
                       {u.avatar_url && <AvatarImage src={u.avatar_url} />}
-                      <AvatarFallback className="text-xs">{initial}</AvatarFallback>
+                      <AvatarFallback className="text-xs">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                      </AvatarFallback>
                     </Avatar>
                     <span className="absolute -right-0.5 -bottom-0.5 h-2 w-2 rounded-full border border-card bg-green-500" />
                   </div>

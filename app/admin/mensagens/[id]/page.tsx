@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ImageIcon } from "lucide-react";
+import { ArrowLeft, ImageIcon, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -124,17 +124,13 @@ export default async function AdminDmThreadDetail({
               <Avatar className="h-10 w-10 border-2 border-background">
                 {thread.user_a?.avatar_url && <AvatarImage src={thread.user_a.avatar_url} />}
                 <AvatarFallback>
-                  {(thread.user_a?.display_name ?? thread.user_a?.username ?? "?")
-                    .charAt(0)
-                    .toUpperCase()}
+                  <User className="h-5 w-5 text-muted-foreground" />
                 </AvatarFallback>
               </Avatar>
               <Avatar className="h-10 w-10 border-2 border-background">
                 {thread.user_b?.avatar_url && <AvatarImage src={thread.user_b.avatar_url} />}
                 <AvatarFallback>
-                  {(thread.user_b?.display_name ?? thread.user_b?.username ?? "?")
-                    .charAt(0)
-                    .toUpperCase()}
+                  <User className="h-5 w-5 text-muted-foreground" />
                 </AvatarFallback>
               </Avatar>
             </div>
@@ -180,9 +176,6 @@ export default async function AdminDmThreadDetail({
 
           {messages.map((m) => {
             const sender = profileById.get(m.sender_id);
-            const initial = (sender?.display_name ?? sender?.username ?? "?")
-              .charAt(0)
-              .toUpperCase();
             const url = m.image_path ? signedUrlByPath.get(m.image_path) : null;
             const expired =
               m.expires_at && new Date(m.expires_at).getTime() < Date.now();
@@ -194,7 +187,9 @@ export default async function AdminDmThreadDetail({
               <div key={m.id} className={cn("flex gap-2", laneClass)}>
                 <Avatar className="h-8 w-8 shrink-0">
                   {sender?.avatar_url && <AvatarImage src={sender.avatar_url} />}
-                  <AvatarFallback className="text-[11px]">{initial}</AvatarFallback>
+                  <AvatarFallback className="text-[11px]">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                  </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">

@@ -28,11 +28,6 @@ export function Header() {
     router.refresh();
   }
 
-  const initials =
-    profile?.display_name?.charAt(0)?.toUpperCase() ??
-    profile?.username?.charAt(0)?.toUpperCase() ??
-    "?";
-
   const logoHref = isAdmin ? "/admin" : "/";
 
   return (
@@ -125,7 +120,7 @@ export function Header() {
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
                   <Avatar className="h-9 w-9">
                     <AvatarFallback className="bg-primary/20 text-primary">
-                      {initials}
+                      <Shield className="h-4 w-4" />
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -175,7 +170,9 @@ export function Header() {
                   <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
                     <Avatar className="h-9 w-9">
                       {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
-                      <AvatarFallback>{initials}</AvatarFallback>
+                      <AvatarFallback>
+                        <UserIcon className="h-4 w-4 text-muted-foreground" />
+                      </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users } from "lucide-react";
+import { User, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -80,15 +80,13 @@ export function PresenceList({ roomId, user, invisible = false }: PresenceListPr
 
       <div className="scrollbar-thin flex flex-1 items-center gap-2 overflow-x-auto lg:hidden">
         {usersToShow.map((u) => {
-          const initial =
-            u.display_name?.charAt(0)?.toUpperCase() ??
-            u.username?.charAt(0)?.toUpperCase() ??
-            "?";
           return (
             <div key={u.user_id} className="relative shrink-0" title={u.display_name ?? u.username}>
               <Avatar className="h-7 w-7">
                 {u.avatar_url && <AvatarImage src={u.avatar_url} />}
-                <AvatarFallback className="text-xs">{initial}</AvatarFallback>
+                <AvatarFallback className="text-xs">
+                  <User className="h-3.5 w-3.5 text-muted-foreground" />
+                </AvatarFallback>
               </Avatar>
               <span className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-green-500" />
             </div>
@@ -98,16 +96,14 @@ export function PresenceList({ roomId, user, invisible = false }: PresenceListPr
 
       <div className="scrollbar-thin hidden min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 lg:block">
         {usersToShow.map((u) => {
-          const initial =
-            u.display_name?.charAt(0)?.toUpperCase() ??
-            u.username?.charAt(0)?.toUpperCase() ??
-            "?";
           return (
             <div key={u.user_id} className="flex items-center gap-2 text-sm">
               <div className="relative">
                 <Avatar className="h-7 w-7">
                   {u.avatar_url && <AvatarImage src={u.avatar_url} />}
-                  <AvatarFallback className="text-xs">{initial}</AvatarFallback>
+                  <AvatarFallback className="text-xs">
+                    <User className="h-3.5 w-3.5 text-muted-foreground" />
+                  </AvatarFallback>
                 </Avatar>
                 <span className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-green-500" />
               </div>
