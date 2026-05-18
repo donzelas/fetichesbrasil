@@ -2,7 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Image as ImageIcon, MessageCircle, MessagesSquare } from "lucide-react";
+import {
+  ChevronRight,
+  Image as ImageIcon,
+  MessageCircle,
+  MessagesSquare,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -231,17 +236,50 @@ export function LiveMonitor({
     };
   }, []);
 
-  const filtered = useMemo(() => {
-    if (filter === "all") return messages;
-    return messages.filter((m) => m.kind === filter);
+  type Group = {
+    kind: LiveMessageKind;
+    groupId: string;
+    groupLabel: string;
+    groupHref: string;
+    messages: LiveMessage[];
+    lastAt: string;
+    images: number;
+    authors: Set<string>;
+  };
+
+  const groups = useMemo<Group[]>(() => {
+    const map = new Map<string, Group>();
+    for (const m of messages) {
+      if (filter !== "all" && m.kind !== filter) continue;
+      const key = `${m.kind}:${m.groupId}`;
+      let g = map.get(key);
+      if (!g) {
+        g = {
+          kind: m.kind,
+          groupId: m.groupId,
+          groupLabel: m.groupLabel,
+          groupHref: m.groupHref,
+          messages: [],
+          lastAt: m.createdAt,
+          images: 0,
+          authors: new Set<string>(),
+        };
+        map.set(key, g);
+      }
+      g.messages.push(m);
+      if (m.createdAt > g.lastAt) g.lastAt = m.createdAt;
+      if (m.hasImage) g.images += 1;
+      g.authors.add(m.authorId);
+    }
+    return [...map.values()].sort((a, b) =>
+      a.lastAt < b.lastAt ? 1 : -1
+    );
   }, [messages, filter]);
 
-  // Agrupa por groupId pra mostrar "X grupos ativos"
-  const groupCount = useMemo(
+  const totalGroups = useMemo(
     () => new Set(messages.map((m) => `${m.kind}:${m.groupId}`)).size,
     [messages]
   );
-
   const roomCount = useMemo(
     () =>
       new Set(
@@ -262,15 +300,15 @@ export function LiveMonitor({
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-red-500" />
           {messages.length}{" "}
-          {messages.length === 1 ? "mensagem" : "mensagens"} em {groupCount}{" "}
-          {groupCount === 1 ? "conversa" : "conversas"}
+          {messages.length === 1 ? "mensagem" : "mensagens"} em {totalGroups}{" "}
+          {totalGroups === 1 ? "conversa" : "conversas"}
         </div>
 
         <div className="flex gap-1 rounded-lg bg-muted p-1">
           <FilterTab
             active={filter === "all"}
             onClick={() => setFilter("all")}
-            label={`Tudo (${messages.length})`}
+            label={`Tudo (${totalGroups})`}
           />
           <FilterTab
             active={filter === "room"}
@@ -287,74 +325,134 @@ export function LiveMonitor({
         </div>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          {filtered.length === 0 ? (
-            <div className="py-16 text-center text-sm text-muted-foreground">
-              Nenhuma atividade nos últimos {windowMinutes} minutos.
-              <br />
-              Quando alguém mandar mensagem, vai aparecer aqui na hora.
-            </div>
-          ) : (
-            <ul className="divide-y divide-border/50">
-              {filtered.map((m) => (
-                <li key={`${m.kind}:${m.id}`}>
-                  <Link
-                    href={m.groupHref}
-                    className="flex items-start gap-3 p-3 transition hover:bg-muted/40"
-                  >
-                    <Avatar className="h-9 w-9 shrink-0">
-                      {m.authorAvatar && <AvatarImage src={m.authorAvatar} />}
-                      <AvatarFallback className="text-[10px]">
-                        {(m.authorName ?? "?").slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                        <span className="text-sm font-semibold">
-                          {m.authorName}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          em
-                        </span>
-                        <span
-                          className={cn(
-                            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
-                            m.kind === "room"
-                              ? "bg-primary/10 text-primary"
-                              : "bg-amber-500/10 text-amber-500"
-                          )}
-                        >
-                          {m.kind === "room" ? (
-                            <MessagesSquare className="h-3 w-3" />
-                          ) : (
-                            <MessageCircle className="h-3 w-3" />
-                          )}
-                          {m.groupLabel}
-                        </span>
-                        <span className="ml-auto text-[11px] text-muted-foreground">
-                          {formatRelativeTime(m.createdAt)}
-                        </span>
-                      </div>
-                      <p className="mt-0.5 line-clamp-2 break-words text-sm text-foreground/90">
-                        {m.hasImage && (
-                          <span className="mr-1 inline-flex items-center gap-1 align-middle text-primary">
-                            <ImageIcon className="h-3.5 w-3.5" />
-                            imagem
-                          </span>
-                        )}
-                        {m.content ?? (m.hasImage ? "" : "(vazio)")}
-                      </p>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+      {groups.length === 0 ? (
+        <Card>
+          <CardContent className="py-16 text-center text-sm text-muted-foreground">
+            Nenhuma atividade nos últimos {windowMinutes} minutos.
+            <br />
+            Quando alguém mandar mensagem, vai aparecer aqui na hora.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-3 lg:grid-cols-2">
+          {groups.map((g) => (
+            <ConversationCard key={`${g.kind}:${g.groupId}`} group={g} />
+          ))}
+        </div>
+      )}
     </div>
+  );
+}
+
+function ConversationCard({ group }: { group: {
+  kind: LiveMessageKind;
+  groupId: string;
+  groupLabel: string;
+  groupHref: string;
+  messages: LiveMessage[];
+  lastAt: string;
+  images: number;
+  authors: Set<string>;
+} }) {
+  const isRoom = group.kind === "room";
+  const orderedMessages = useMemo(
+    () =>
+      [...group.messages].sort((a, b) =>
+        a.createdAt < b.createdAt ? 1 : -1
+      ),
+    [group.messages]
+  );
+
+  return (
+    <Card
+      className={cn(
+        "overflow-hidden border-l-4 transition hover:border-primary/40",
+        isRoom ? "border-l-primary/70" : "border-l-amber-500/70"
+      )}
+    >
+      <CardContent className="p-0">
+        <Link
+          href={group.groupHref}
+          className="flex items-center justify-between gap-3 border-b border-border/40 px-4 py-3 transition hover:bg-muted/30"
+        >
+          <div className="flex min-w-0 items-center gap-2">
+            <span
+              className={cn(
+                "grid h-8 w-8 shrink-0 place-items-center rounded-lg",
+                isRoom
+                  ? "bg-primary/10 text-primary"
+                  : "bg-amber-500/10 text-amber-500"
+              )}
+            >
+              {isRoom ? (
+                <MessagesSquare className="h-4 w-4" />
+              ) : (
+                <MessageCircle className="h-4 w-4" />
+              )}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold">
+                {group.groupLabel}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                {group.messages.length}{" "}
+                {group.messages.length === 1 ? "msg" : "msgs"} ·{" "}
+                {group.authors.size}{" "}
+                {group.authors.size === 1 ? "pessoa" : "pessoas"}
+                {group.images > 0 && (
+                  <>
+                    {" · "}
+                    <span className="inline-flex items-center gap-0.5 text-primary">
+                      <ImageIcon className="h-3 w-3" />
+                      {group.images}
+                    </span>
+                  </>
+                )}
+              </p>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2 text-[11px] text-muted-foreground">
+            <span>{formatRelativeTime(group.lastAt)}</span>
+            <ChevronRight className="h-4 w-4" />
+          </div>
+        </Link>
+
+        <ul className="max-h-72 divide-y divide-border/30 overflow-y-auto">
+          {orderedMessages.map((m) => (
+            <li
+              key={`${m.kind}:${m.id}`}
+              className="flex items-start gap-2 px-4 py-2"
+            >
+              <Avatar className="h-7 w-7 shrink-0">
+                {m.authorAvatar && <AvatarImage src={m.authorAvatar} />}
+                <AvatarFallback className="text-[9px]">
+                  {(m.authorName ?? "?").slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline gap-2">
+                  <span className="truncate text-xs font-semibold">
+                    {m.authorName}
+                  </span>
+                  <span className="ml-auto whitespace-nowrap text-[10px] text-muted-foreground">
+                    {formatRelativeTime(m.createdAt)}
+                  </span>
+                </div>
+                <p className="line-clamp-2 break-words text-xs text-foreground/90">
+                  {m.hasImage && (
+                    <span className="mr-1 inline-flex items-center gap-1 align-middle text-primary">
+                      <ImageIcon className="h-3 w-3" />
+                      imagem
+                    </span>
+                  )}
+                  {m.content ?? (m.hasImage ? "" : "(vazio)")}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
   );
 }
 
