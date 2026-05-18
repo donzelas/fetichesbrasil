@@ -70,19 +70,32 @@ async function grantPremium(
   const admin = createAdminClient();
 
   let updated = false;
+  const updateFields = {
+    status: "paid",
+    paid_at: new Date().toISOString(),
+    expires_at: new Date(
+      Date.now() + durationDays * 24 * 60 * 60 * 1000
+    ).toISOString(),
+    mercadopago_payment_id: paymentInfo.mercadopago_payment_id ?? null,
+    mercadopago_status: paymentInfo.mercadopago_status ?? null,
+  };
 
-  if (paymentInfo.mercadopago_preference_id) {
+  // Tenta match por payment_id primeiro (PIX direto).
+  if (paymentInfo.mercadopago_payment_id) {
     const { data } = await admin
       .from("payments" as never)
-      .update({
-        status: "paid",
-        paid_at: new Date().toISOString(),
-        expires_at: new Date(
-          Date.now() + durationDays * 24 * 60 * 60 * 1000
-        ).toISOString(),
-        mercadopago_payment_id: paymentInfo.mercadopago_payment_id ?? null,
-        mercadopago_status: paymentInfo.mercadopago_status ?? null,
-      } as never)
+      .update(updateFields as never)
+      .eq("mercadopago_payment_id" as never, paymentInfo.mercadopago_payment_id)
+      .select("id")
+      .maybeSingle();
+    updated = !!data;
+  }
+
+  // Fallback: tenta por preference_id (Checkout Pro legado).
+  if (!updated && paymentInfo.mercadopago_preference_id) {
+    const { data } = await admin
+      .from("payments" as never)
+      .update(updateFields as never)
       .eq("mercadopago_preference_id" as never, paymentInfo.mercadopago_preference_id)
       .select("id")
       .maybeSingle();
@@ -113,10 +126,14 @@ async function grantPremium(
     } as never);
   }
 
-  await admin.rpc("grant_premium", {
+  const { error: rpcErr } = await admin.rpc("grant_premium" as never, {
     p_user_id: userId,
     p_duration_days: durationDays,
-  });
+  } as never);
+  if (rpcErr) {
+    console.error("[mp/webhook] grant_premium RPC falhou:", rpcErr);
+    throw new Error(`grant_premium falhou: ${rpcErr.message}`);
+  }
 }
 
 export async function POST(request: Request) {
@@ -139,7 +156,15 @@ export async function POST(request: Request) {
       ? String(queryId)
       : null;
 
+  console.log("[mp/webhook] recebido", {
+    eventType,
+    dataId,
+    body: rawBody,
+    query: Object.fromEntries(url.searchParams),
+  });
+
   if (!verifySignature(request, dataId)) {
+    console.warn("[mp/webhook] assinatura invalida");
     return NextResponse.json({ error: "Assinatura inválida" }, { status: 401 });
   }
 
@@ -211,11 +236,18 @@ export async function POST(request: Request) {
     }
 
     if (status === "approved") {
+      console.log("[mp/webhook] concedendo Premium", {
+        userId,
+        planId,
+        durationDays,
+        paymentId: String(payment.id),
+      });
       await grantPremium(userId, planId, durationDays, {
         mercadopago_preference_id: preferenceId,
         mercadopago_payment_id: String(payment.id),
         mercadopago_status: status,
       });
+      console.log("[mp/webhook] Premium concedido com sucesso");
     } else if (status === "rejected" || status === "cancelled") {
       const admin = createAdminClient();
       if (preferenceId) {
