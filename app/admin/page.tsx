@@ -198,7 +198,7 @@ export default async function AdminHomePage() {
               </h3>
               <p className="mt-1 text-sm text-muted-foreground">
                 Auditoria de fotos enviadas nas salas. Visíveis para admin mesmo
-                após expiração (5s).
+                após expiração (15s).
               </p>
             </CardContent>
           </Card>

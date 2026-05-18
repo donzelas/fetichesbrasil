@@ -144,7 +144,7 @@ export function MessageInput({ roomId, userId }: MessageInputProps) {
           </div>
           <div className="flex-1 text-xs text-muted-foreground">
             <p className="font-medium text-foreground">Imagem pronta</p>
-            <p>Auto-destruir em 5 segundos após envio.</p>
+            <p>Auto-destruir em 15 segundos após envio.</p>
           </div>
           <Button
             type="button"

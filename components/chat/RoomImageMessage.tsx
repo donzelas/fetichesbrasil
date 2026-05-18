@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils/cn";
 
 export const ROOM_IMAGE_BUCKET = "room-images";
 /** Tempo até a imagem ser considerada expirada para usuários comuns. */
-export const ROOM_IMAGE_TTL_MS = 5 * 1000;
+export const ROOM_IMAGE_TTL_MS = 15 * 1000;
 
 interface RoomImageMessageProps {
   imagePath: string;
@@ -41,7 +41,7 @@ export function RoomImageMessage({
   const expired = remaining !== null && remaining <= 0;
 
   // Snapchat-style: TODO usuário (incluindo o autor) perde acesso depois
-  // dos 5s. Apenas admin retém para auditoria.
+  // do TTL (ROOM_IMAGE_TTL_MS). Apenas admin retém para auditoria.
   const visible = !expired || isAdmin;
 
   useEffect(() => {
