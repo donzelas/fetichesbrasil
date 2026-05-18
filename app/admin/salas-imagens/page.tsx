@@ -82,15 +82,14 @@ export default async function AdminRoomImagesPage({
     adminAvailable = true;
 
     const [
-      { count: cTotalMessages, error: eTotalMessages },
-      { count: cImagePath, error: eImagePath },
-      { count: cImageUrlLegacy, error: eImageUrlLegacy },
-      { count: cExpired, error: eExpired },
-      { count: cBucketObjects, error: eBucketObjects },
+      totalMessagesRes,
+      imagePathRes,
+      imageUrlLegacyRes,
+      expiredRes,
+      bucketListRes,
+      lastImageMessageRes,
     ] = await Promise.all([
-      admin
-        .from("messages")
-        .select("*", { count: "exact", head: true }),
+      admin.from("messages").select("*", { count: "exact", head: true }),
       admin
         .from("messages")
         .select("*", { count: "exact", head: true })
@@ -104,54 +103,70 @@ export default async function AdminRoomImagesPage({
         .select("*", { count: "exact", head: true })
         .not("image_path", "is", null)
         .lt("expires_at", new Date().toISOString()),
-      // Conta objetos no bucket direto na tabela storage.objects
+      // Lista pastas no root do bucket — cada pasta é um room_id.
+      admin.storage
+        .from("room-images")
+        .list("", { limit: 100, offset: 0 }),
       admin
-        .schema("storage")
-        .from("objects")
-        .select("*", { count: "exact", head: true })
-        .eq("bucket_id", "room-images"),
+        .from("messages")
+        .select("id, image_path, created_at, room_id, user_id")
+        .not("image_path", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
     ]);
 
     debug.push(
       {
         label: "Mensagens (total)",
         value:
-          eTotalMessages != null
-            ? `erro: ${eTotalMessages.message}`
-            : String(cTotalMessages ?? 0),
-        ok: eTotalMessages == null,
+          totalMessagesRes.error != null
+            ? `erro: ${totalMessagesRes.error.message}`
+            : String(totalMessagesRes.count ?? 0),
+        ok: totalMessagesRes.error == null,
       },
       {
         label: "Com image_path (novo padrão)",
         value:
-          eImagePath != null
-            ? `erro: ${eImagePath.message}`
-            : String(cImagePath ?? 0),
-        ok: eImagePath == null && (cImagePath ?? 0) > 0,
+          imagePathRes.error != null
+            ? `erro: ${imagePathRes.error.message}`
+            : String(imagePathRes.count ?? 0),
+        ok: imagePathRes.error == null && (imagePathRes.count ?? 0) > 0,
       },
       {
         label: "Com image_url (legado / 0001)",
         value:
-          eImageUrlLegacy != null
-            ? `erro: ${eImageUrlLegacy.message}`
-            : String(cImageUrlLegacy ?? 0),
-        ok: eImageUrlLegacy == null,
+          imageUrlLegacyRes.error != null
+            ? `erro: ${imageUrlLegacyRes.error.message}`
+            : String(imageUrlLegacyRes.count ?? 0),
+        ok: imageUrlLegacyRes.error == null,
       },
       {
         label: "Já expiradas (image_path)",
         value:
-          eExpired != null
-            ? `erro: ${eExpired.message}`
-            : String(cExpired ?? 0),
-        ok: eExpired == null,
+          expiredRes.error != null
+            ? `erro: ${expiredRes.error.message}`
+            : String(expiredRes.count ?? 0),
+        ok: expiredRes.error == null,
       },
       {
-        label: "Arquivos no bucket room-images",
+        label: "Bucket room-images (pastas no root)",
         value:
-          eBucketObjects != null
-            ? `erro: ${eBucketObjects.message}`
-            : String(cBucketObjects ?? 0),
-        ok: eBucketObjects == null,
+          bucketListRes.error != null
+            ? `erro: ${bucketListRes.error.message}`
+            : `${bucketListRes.data?.length ?? 0} item(ns)`,
+        ok: bucketListRes.error == null,
+      },
+      {
+        label: "Última mensagem com image_path",
+        value:
+          lastImageMessageRes.error != null
+            ? `erro: ${lastImageMessageRes.error.message}`
+            : lastImageMessageRes.data
+            ? `${new Date(lastImageMessageRes.data.created_at).toLocaleString("pt-BR")} — ${lastImageMessageRes.data.image_path}`
+            : "—",
+        ok:
+          lastImageMessageRes.error == null && !!lastImageMessageRes.data,
       },
     );
   } catch (e) {
