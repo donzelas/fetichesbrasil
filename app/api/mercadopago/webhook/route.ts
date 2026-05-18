@@ -171,10 +171,28 @@ export async function POST(request: Request) {
       (typeof metadata.plan_id === "string" && metadata.plan_id) ||
       externalReference?.split(":")[1] ||
       null;
-    const durationDays =
+
+    let durationDays = Number(
       typeof metadata.duration_days === "number"
         ? metadata.duration_days
-        : Number(metadata.duration_days);
+        : metadata.duration_days ?? NaN
+    );
+
+    // Fallback: o Mercado Pago nem sempre propaga metadata da Preference
+    // para o Payment. Quando duration_days vier ausente, buscamos da tabela
+    // plans usando o planId obtido do metadata OU do external_reference.
+    if ((!Number.isFinite(durationDays) || durationDays <= 0) && planId) {
+      const adminLookup = createAdminClient();
+      const { data: planRow } = await adminLookup
+        .from("plans" as never)
+        .select("duration_days")
+        .eq("id" as never, planId)
+        .single();
+      const planTyped = planRow as unknown as { duration_days?: number } | null;
+      if (planTyped?.duration_days && planTyped.duration_days > 0) {
+        durationDays = planTyped.duration_days;
+      }
+    }
 
     if (!userId || !planId || !Number.isFinite(durationDays) || durationDays <= 0) {
       // Sem como creditar — registramos só status no payments correspondente.
