@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Crown, Loader2, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -25,27 +26,33 @@ function formatBRL(cents: number) {
 }
 
 export function PremiumPlans({ plans }: { plans: PublicPlan[] }) {
+  const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   async function handleSubscribe(plan: PublicPlan) {
     setLoadingId(plan.id);
     try {
-      const res = await fetch("/api/checkout", {
+      const res = await fetch("/api/pix/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan_id: plan.id }),
       });
       const json = await res.json();
       if (!res.ok) {
-        throw new Error(json.error ?? "Erro ao iniciar pagamento");
+        throw new Error(json.error ?? "Erro ao gerar PIX");
       }
-      if (json.url) {
-        window.location.href = json.url as string;
-        return;
+      if (!json.payment_id || !json.qr_code_base64) {
+        throw new Error("Resposta inválida do servidor");
       }
-      throw new Error("URL de checkout não retornada");
+      // Guardamos os dados do PIX em sessionStorage para a proxima pagina
+      // exibir sem ter que gerar de novo.
+      sessionStorage.setItem(
+        `fb_pix_${json.payment_id}`,
+        JSON.stringify(json)
+      );
+      router.push(`/premium/pagar/${json.payment_id}`);
     } catch (e) {
-      toast.error("Falha no checkout", {
+      toast.error("Falha ao gerar PIX", {
         description: e instanceof Error ? e.message : undefined,
       });
       setLoadingId(null);
