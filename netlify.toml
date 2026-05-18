@@ -8,3 +8,10 @@
 [build.environment]
   NODE_VERSION = "20"
   NEXT_TELEMETRY_DISABLED = "1"
+
+# Netlify Scheduled Functions (cron) — diretório padrão.
+# A funcao expire-premiums.mts roda @hourly e dispara
+# /api/cron/expire-premiums no proprio site.
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
