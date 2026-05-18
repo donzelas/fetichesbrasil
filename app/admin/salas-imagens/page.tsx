@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronRight, ImageIcon, Timer } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils/cn";
 import { formatRelativeTime } from "@/lib/utils/format";
@@ -70,6 +71,105 @@ export default async function AdminRoomImagesPage({
     console.error("[admin/salas-imagens] erro ao buscar mensagens:", rowsErr);
   }
   const rows = (rowsRaw ?? []) as ImageMessageRow[];
+
+  // ─── Diagnóstico ─────────────────────────────────────────
+  // Roda com Service Role (bypass de RLS) para mostrar a verdade absoluta.
+  type DebugRow = { label: string; value: string; ok: boolean };
+  const debug: DebugRow[] = [];
+  let adminAvailable = false;
+  try {
+    const admin = createAdminClient();
+    adminAvailable = true;
+
+    const [
+      { count: cTotalMessages, error: eTotalMessages },
+      { count: cImagePath, error: eImagePath },
+      { count: cImageUrlLegacy, error: eImageUrlLegacy },
+      { count: cExpired, error: eExpired },
+      { count: cBucketObjects, error: eBucketObjects },
+    ] = await Promise.all([
+      admin
+        .from("messages")
+        .select("*", { count: "exact", head: true }),
+      admin
+        .from("messages")
+        .select("*", { count: "exact", head: true })
+        .not("image_path", "is", null),
+      admin
+        .from("messages")
+        .select("*", { count: "exact", head: true })
+        .not("image_url", "is", null),
+      admin
+        .from("messages")
+        .select("*", { count: "exact", head: true })
+        .not("image_path", "is", null)
+        .lt("expires_at", new Date().toISOString()),
+      // Conta objetos no bucket direto na tabela storage.objects
+      admin
+        .schema("storage")
+        .from("objects")
+        .select("*", { count: "exact", head: true })
+        .eq("bucket_id", "room-images"),
+    ]);
+
+    debug.push(
+      {
+        label: "Mensagens (total)",
+        value:
+          eTotalMessages != null
+            ? `erro: ${eTotalMessages.message}`
+            : String(cTotalMessages ?? 0),
+        ok: eTotalMessages == null,
+      },
+      {
+        label: "Com image_path (novo padrão)",
+        value:
+          eImagePath != null
+            ? `erro: ${eImagePath.message}`
+            : String(cImagePath ?? 0),
+        ok: eImagePath == null && (cImagePath ?? 0) > 0,
+      },
+      {
+        label: "Com image_url (legado / 0001)",
+        value:
+          eImageUrlLegacy != null
+            ? `erro: ${eImageUrlLegacy.message}`
+            : String(cImageUrlLegacy ?? 0),
+        ok: eImageUrlLegacy == null,
+      },
+      {
+        label: "Já expiradas (image_path)",
+        value:
+          eExpired != null
+            ? `erro: ${eExpired.message}`
+            : String(cExpired ?? 0),
+        ok: eExpired == null,
+      },
+      {
+        label: "Arquivos no bucket room-images",
+        value:
+          eBucketObjects != null
+            ? `erro: ${eBucketObjects.message}`
+            : String(cBucketObjects ?? 0),
+        ok: eBucketObjects == null,
+      },
+    );
+  } catch (e) {
+    debug.push({
+      label: "Service Role",
+      value:
+        e instanceof Error ? e.message : "SUPABASE_SERVICE_ROLE_KEY ausente",
+      ok: false,
+    });
+  }
+
+  if (rowsErr) {
+    debug.push({
+      label: "Erro listagem (server client)",
+      value: rowsErr.message,
+      ok: false,
+    });
+  }
 
   // Query 2 — salas referenciadas (em separado, robusto contra deleted_at
   // e contra problemas de embedding/RLS no PostgREST)
@@ -149,6 +249,42 @@ export default async function AdminRoomImagesPage({
           · Admin enxerga todas as imagens, inclusive expiradas.
         </p>
       </div>
+
+      <Card className="border-amber-500/30 bg-amber-500/5">
+        <CardContent className="space-y-2 py-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold">Diagnóstico</p>
+            <span className="text-xs text-muted-foreground">
+              {adminAvailable
+                ? "via Service Role"
+                : "Service Role indisponível"}
+            </span>
+          </div>
+          <div className="grid gap-1.5 sm:grid-cols-2">
+            {debug.map((d) => (
+              <div
+                key={d.label}
+                className={cn(
+                  "flex items-center justify-between gap-3 rounded-md border px-3 py-1.5 text-xs",
+                  d.ok
+                    ? "border-border/40 bg-background/40"
+                    : "border-destructive/40 bg-destructive/5 text-destructive"
+                )}
+              >
+                <span className="font-medium text-foreground/80">
+                  {d.label}
+                </span>
+                <span className="font-mono">{d.value}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Para usar o sistema novo, &quot;Com image_path&quot; precisa ser
+            &gt; 0. Se &quot;Com image_url (legado)&quot; tiver número, são
+            mensagens da v1 que nunca foram realmente usadas — não aparecem aqui.
+          </p>
+        </CardContent>
+      </Card>
 
       <nav className="flex flex-wrap gap-1 border-b border-border/60">
         {RANGES.map((r) => {
