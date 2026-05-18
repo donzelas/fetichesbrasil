@@ -118,7 +118,7 @@ export default async function AdminLiveMonitorPage() {
       groupId: m.room_id,
       groupLabel:
         roomById.get(m.room_id)?.name ?? "Sala desconhecida",
-      groupHref: `/admin/salas/${m.room_id}`,
+      groupHref: `/admin/salas-conversas/${m.room_id}?back=/admin/ao-vivo`,
       authorId: m.user_id,
       authorName:
         profileById.get(m.user_id)?.display_name ??

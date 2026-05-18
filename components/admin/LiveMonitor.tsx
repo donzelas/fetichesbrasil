@@ -172,7 +172,7 @@ export function LiveMonitor({
             id: row.id,
             groupId: row.room_id,
             groupLabel: room?.name ?? "Sala desconhecida",
-            groupHref: `/admin/salas/${row.room_id}`,
+            groupHref: `/admin/salas-conversas/${row.room_id}?back=/admin/ao-vivo`,
             authorId: row.user_id,
             authorName: author.display_name ?? author.username ?? "Usuário",
             authorAvatar: author.avatar_url,
@@ -355,104 +355,99 @@ function ConversationCard({ group }: { group: {
   authors: Set<string>;
 } }) {
   const isRoom = group.kind === "room";
-  const orderedMessages = useMemo(
-    () =>
-      [...group.messages].sort((a, b) =>
-        a.createdAt < b.createdAt ? 1 : -1
-      ),
-    [group.messages]
-  );
+
+  // Última mensagem para o preview
+  const lastMessage = useMemo(() => {
+    let latest = group.messages[0];
+    for (const m of group.messages) {
+      if (m.createdAt > latest.createdAt) latest = m;
+    }
+    return latest;
+  }, [group.messages]);
 
   return (
-    <Card
-      className={cn(
-        "overflow-hidden border-l-4 transition hover:border-primary/40",
-        isRoom ? "border-l-primary/70" : "border-l-amber-500/70"
-      )}
-    >
-      <CardContent className="p-0">
-        <Link
-          href={group.groupHref}
-          className="flex items-center justify-between gap-3 border-b border-border/40 px-4 py-3 transition hover:bg-muted/30"
-        >
-          <div className="flex min-w-0 items-center gap-2">
-            <span
-              className={cn(
-                "grid h-8 w-8 shrink-0 place-items-center rounded-lg",
-                isRoom
-                  ? "bg-primary/10 text-primary"
-                  : "bg-amber-500/10 text-amber-500"
-              )}
-            >
-              {isRoom ? (
-                <MessagesSquare className="h-4 w-4" />
-              ) : (
-                <MessageCircle className="h-4 w-4" />
-              )}
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">
-                {group.groupLabel}
-              </p>
-              <p className="text-[11px] text-muted-foreground">
-                {group.messages.length}{" "}
-                {group.messages.length === 1 ? "msg" : "msgs"} ·{" "}
-                {group.authors.size}{" "}
-                {group.authors.size === 1 ? "pessoa" : "pessoas"}
-                {group.images > 0 && (
-                  <>
-                    {" · "}
-                    <span className="inline-flex items-center gap-0.5 text-primary">
-                      <ImageIcon className="h-3 w-3" />
-                      {group.images}
-                    </span>
-                  </>
+    <Link href={group.groupHref} className="block">
+      <Card
+        className={cn(
+          "h-full overflow-hidden border-l-4 transition hover:border-primary/60 hover:bg-muted/20",
+          isRoom ? "border-l-primary/70" : "border-l-amber-500/70"
+        )}
+      >
+        <CardContent className="space-y-3 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2">
+              <span
+                className={cn(
+                  "grid h-10 w-10 shrink-0 place-items-center rounded-lg",
+                  isRoom
+                    ? "bg-primary/10 text-primary"
+                    : "bg-amber-500/10 text-amber-500"
                 )}
+              >
+                {isRoom ? (
+                  <MessagesSquare className="h-5 w-5" />
+                ) : (
+                  <MessageCircle className="h-5 w-5" />
+                )}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-base font-semibold">
+                  {group.groupLabel}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  {group.messages.length}{" "}
+                  {group.messages.length === 1 ? "msg" : "msgs"} ·{" "}
+                  {group.authors.size}{" "}
+                  {group.authors.size === 1 ? "pessoa" : "pessoas"}
+                  {group.images > 0 && (
+                    <>
+                      {" · "}
+                      <span className="inline-flex items-center gap-0.5 text-primary">
+                        <ImageIcon className="h-3 w-3" />
+                        {group.images}
+                      </span>
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+          </div>
+
+          {/* Preview da última mensagem */}
+          <div className="flex items-start gap-2 rounded-lg bg-muted/40 px-3 py-2">
+            <Avatar className="h-6 w-6 shrink-0">
+              {lastMessage.authorAvatar && (
+                <AvatarImage src={lastMessage.authorAvatar} />
+              )}
+              <AvatarFallback className="text-[9px]">
+                {(lastMessage.authorName ?? "?").slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline gap-2">
+                <span className="truncate text-xs font-semibold">
+                  {lastMessage.authorName}
+                </span>
+                <span className="ml-auto whitespace-nowrap text-[10px] text-muted-foreground">
+                  {formatRelativeTime(lastMessage.createdAt)}
+                </span>
+              </div>
+              <p className="line-clamp-2 break-words text-xs text-foreground/85">
+                {lastMessage.hasImage && (
+                  <span className="mr-1 inline-flex items-center gap-1 align-middle text-primary">
+                    <ImageIcon className="h-3 w-3" />
+                    imagem
+                  </span>
+                )}
+                {lastMessage.content ??
+                  (lastMessage.hasImage ? "" : "(vazio)")}
               </p>
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-2 text-[11px] text-muted-foreground">
-            <span>{formatRelativeTime(group.lastAt)}</span>
-            <ChevronRight className="h-4 w-4" />
-          </div>
-        </Link>
-
-        <ul className="max-h-72 divide-y divide-border/30 overflow-y-auto">
-          {orderedMessages.map((m) => (
-            <li
-              key={`${m.kind}:${m.id}`}
-              className="flex items-start gap-2 px-4 py-2"
-            >
-              <Avatar className="h-7 w-7 shrink-0">
-                {m.authorAvatar && <AvatarImage src={m.authorAvatar} />}
-                <AvatarFallback className="text-[9px]">
-                  {(m.authorName ?? "?").slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline gap-2">
-                  <span className="truncate text-xs font-semibold">
-                    {m.authorName}
-                  </span>
-                  <span className="ml-auto whitespace-nowrap text-[10px] text-muted-foreground">
-                    {formatRelativeTime(m.createdAt)}
-                  </span>
-                </div>
-                <p className="line-clamp-2 break-words text-xs text-foreground/90">
-                  {m.hasImage && (
-                    <span className="mr-1 inline-flex items-center gap-1 align-middle text-primary">
-                      <ImageIcon className="h-3 w-3" />
-                      imagem
-                    </span>
-                  )}
-                  {m.content ?? (m.hasImage ? "" : "(vazio)")}
-                </p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 
