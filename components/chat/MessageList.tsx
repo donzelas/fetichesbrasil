@@ -6,6 +6,7 @@ import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { formatTime } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
 import type { Message, Profile } from "@/types/database";
+import { RoomImageMessage } from "./RoomImageMessage";
 
 type MessageWithUser = Message & {
   user: Pick<Profile, "id" | "username" | "display_name" | "avatar_url"> | null;
@@ -72,7 +73,10 @@ export function MessageList({
             .select("id, username, display_name, avatar_url")
             .eq("id", m.user_id)
             .single();
-          setMessages((prev) => [...prev, { ...m, user } as MessageWithUser]);
+          setMessages((prev) => {
+            if (prev.some((x) => x.id === m.id)) return prev;
+            return [...prev, { ...m, user } as MessageWithUser];
+          });
         }
       )
       .subscribe();
@@ -110,6 +114,8 @@ export function MessageList({
         const own = m.user_id === currentUserId;
         const adminLane = adminLaneByUser?.get(m.user_id) ?? 0;
         const adminOffset = isAdminView ? ADMIN_LANE_CLASSES[adminLane] : "";
+        const hasImage = !!m.image_path;
+        const hasText = !!m.content;
         return (
           <div
             key={m.id}
@@ -124,22 +130,43 @@ export function MessageList({
                 <AvatarImage src={m.user.avatar_url} />
               </Avatar>
             )}
-            <div className={cn("flex max-w-[75%] flex-col gap-1", own && "items-end")}>
+            <div
+              className={cn("flex max-w-[75%] flex-col gap-1", own && "items-end")}
+            >
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span>{m.user?.display_name ?? m.user?.username ?? "—"}</span>
                 <span>·</span>
                 <span>{formatTime(m.created_at)}</span>
               </div>
-              <div
-                className={cn(
-                  "rounded-2xl px-3 py-2 text-sm",
-                  own
-                    ? "rounded-tr-sm gradient-primary text-white"
-                    : "rounded-tl-sm bg-muted text-foreground"
-                )}
-              >
-                {m.content}
-              </div>
+              {hasImage && (
+                <div
+                  className={cn(
+                    "rounded-2xl p-1.5",
+                    own
+                      ? "rounded-tr-sm gradient-primary text-white"
+                      : "rounded-tl-sm bg-muted text-foreground"
+                  )}
+                >
+                  <RoomImageMessage
+                    imagePath={m.image_path!}
+                    expiresAt={m.expires_at}
+                    own={own}
+                    isAdmin={isAdminView}
+                  />
+                </div>
+              )}
+              {hasText && (
+                <div
+                  className={cn(
+                    "rounded-2xl px-3 py-2 text-sm",
+                    own
+                      ? "rounded-tr-sm gradient-primary text-white"
+                      : "rounded-tl-sm bg-muted text-foreground"
+                  )}
+                >
+                  {m.content}
+                </div>
+              )}
             </div>
           </div>
         );

@@ -197,6 +197,8 @@ export interface Database {
           user_id: string;
           content: string | null;
           image_url: string | null;
+          image_path: string | null;
+          expires_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -205,6 +207,8 @@ export interface Database {
           user_id: string;
           content?: string | null;
           image_url?: string | null;
+          image_path?: string | null;
+          expires_at?: string | null;
           created_at?: string;
         };
         Update: {
@@ -213,6 +217,8 @@ export interface Database {
           user_id?: string;
           content?: string | null;
           image_url?: string | null;
+          image_path?: string | null;
+          expires_at?: string | null;
           created_at?: string;
         };
         Relationships: [

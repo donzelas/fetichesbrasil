@@ -28,6 +28,7 @@ export default async function AdminHomePage() {
     { count: totalFeaturedCards },
     { count: pendingPosts },
     { count: approvedPosts },
+    { count: totalRoomImages },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -69,6 +70,10 @@ export default async function AdminHomePage() {
       .select("*", { count: "exact", head: true })
       .eq("status", "approved")
       .is("deleted_at", null),
+    supabase
+      .from("messages")
+      .select("*", { count: "exact", head: true })
+      .not("image_path", "is", null),
   ]);
 
   const stats = [
@@ -80,6 +85,7 @@ export default async function AdminHomePage() {
     { label: "Posts pendentes", value: pendingPosts ?? 0, icon: Newspaper, highlight: (pendingPosts ?? 0) > 0 },
     { label: "Posts aprovados", value: approvedPosts ?? 0, icon: Newspaper },
     { label: "Chats individuais", value: totalDmThreads ?? 0, icon: MessageCircle },
+    { label: "Imagens em salas", value: totalRoomImages ?? 0, icon: ImageIcon },
     { label: "Cards de destaque", value: totalFeaturedCards ?? 0, icon: ImageIcon },
   ];
 
@@ -174,6 +180,25 @@ export default async function AdminHomePage() {
               <h3 className="font-semibold group-hover:text-primary">Chats individuais</h3>
               <p className="mt-1 text-sm text-muted-foreground">
                 Ver conversas privadas e imagens (inclusive já expiradas).
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/admin/salas-imagens" className="group">
+          <Card className="transition hover:border-primary/50">
+            <CardContent className="py-6">
+              <h3 className="flex items-center gap-2 font-semibold group-hover:text-primary">
+                <ImageIcon className="h-4 w-4" />
+                Imagens das salas
+                {(totalRoomImages ?? 0) > 0 && (
+                  <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                    {totalRoomImages}
+                  </span>
+                )}
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Auditoria de fotos enviadas nas salas. Visíveis para admin mesmo
+                após expiração (5s).
               </p>
             </CardContent>
           </Card>

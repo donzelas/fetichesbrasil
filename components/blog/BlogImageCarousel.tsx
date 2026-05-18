@@ -2,116 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Eye, X } from "lucide-react";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils/cn";
+import {
+  PROTECTED_IMG_STYLE,
+  preventImageContext as preventContext,
+  useProtectionState,
+} from "@/lib/hooks/useProtectionState";
 
 interface BlogImageCarouselProps {
   urls: string[];
   alt?: string;
   className?: string;
-}
-
-/**
- * Hook que devolve true quando a aba está oculta, sem foco, ou quando
- * heurísticas de DevTools/screen capture disparam. Usado para borrar
- * imagens sensíveis e dificultar print/grab.
- */
-function useProtectionState() {
-  const [hidden, setHidden] = useState(false);
-
-  useEffect(() => {
-    const showWarn = () => {
-      toast.warning("Capturas de tela são monitoradas e proibidas.", {
-        id: "screenshot-warn",
-        duration: 2500,
-      });
-    };
-
-    const onBlur = () => setHidden(true);
-    const onFocus = () => setHidden(false);
-    const onVisibility = () => setHidden(document.visibilityState !== "visible");
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "PrintScreen") {
-        setHidden(true);
-        try {
-          navigator.clipboard?.writeText?.(
-            "Captura bloqueada — FETICHESBRASIL.COM.BR"
-          );
-        } catch {
-          /* clipboard pode falhar fora de foco — tudo bem */
-        }
-        showWarn();
-        setTimeout(() => setHidden(false), 1800);
-      }
-      // Cmd/Ctrl+Shift+S / Cmd+Shift+3/4 (Mac screenshot)
-      if (
-        (e.metaKey || e.ctrlKey) &&
-        e.shiftKey &&
-        ["s", "S", "3", "4", "5"].includes(e.key)
-      ) {
-        setHidden(true);
-        showWarn();
-        setTimeout(() => setHidden(false), 1500);
-      }
-      // Cmd/Ctrl+S → tentativa de "salvar página"
-      if ((e.metaKey || e.ctrlKey) && (e.key === "s" || e.key === "S")) {
-        e.preventDefault();
-        showWarn();
-      }
-      // F12 ou Cmd/Ctrl+Shift+I/J/C (DevTools)
-      if (
-        e.key === "F12" ||
-        ((e.metaKey || e.ctrlKey) &&
-          e.shiftKey &&
-          ["i", "I", "j", "J", "c", "C"].includes(e.key))
-      ) {
-        e.preventDefault();
-        setHidden(true);
-        showWarn();
-      }
-    };
-
-    window.addEventListener("blur", onBlur);
-    window.addEventListener("focus", onFocus);
-    document.addEventListener("visibilitychange", onVisibility);
-    window.addEventListener("keydown", onKeyDown, { capture: true });
-
-    // Heurística: DevTools aberto aumenta diferença entre outerWidth/innerWidth
-    const devtoolsCheck = setInterval(() => {
-      const threshold = 200;
-      const widthDiff = window.outerWidth - window.innerWidth;
-      const heightDiff = window.outerHeight - window.innerHeight;
-      if (widthDiff > threshold || heightDiff > threshold) {
-        setHidden(true);
-      }
-    }, 1500);
-
-    return () => {
-      window.removeEventListener("blur", onBlur);
-      window.removeEventListener("focus", onFocus);
-      document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener("keydown", onKeyDown, { capture: true } as EventListenerOptions);
-      clearInterval(devtoolsCheck);
-    };
-  }, []);
-
-  return hidden;
-}
-
-const PROTECTED_IMG_STYLE: React.CSSProperties = {
-  userSelect: "none",
-  WebkitUserSelect: "none",
-  WebkitTouchCallout: "none",
-  WebkitUserDrag: "none",
-} as React.CSSProperties;
-
-function preventContext(e: React.MouseEvent | React.SyntheticEvent) {
-  e.preventDefault();
-  toast.warning("Captura de imagem desabilitada.", {
-    id: "ctx-warn",
-    duration: 1800,
-  });
 }
 
 const SWIPE_THRESHOLD = 50;
