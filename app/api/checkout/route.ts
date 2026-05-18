@@ -75,16 +75,22 @@ export async function POST(request: Request) {
           },
         ],
         payer: user.email ? { email: user.email } : undefined,
-        // PIX-only: restringe as formas de pagamento do Checkout Pro
+        // PIX-only: PIX pertence ao payment_type `bank_transfer`, entao NAO podemos
+        // excluir bank_transfer. Excluimos tudo o mais. Para garantir mesmo no caso
+        // do MP introduzir outro metodo bank_transfer no futuro, listamos boleto/lotericas
+        // em excluded_payment_methods.
         payment_methods: {
           excluded_payment_types: [
             { id: "credit_card" },
             { id: "debit_card" },
             { id: "ticket" },
             { id: "atm" },
-            { id: "bank_transfer" },
             { id: "prepaid_card" },
             { id: "digital_currency" },
+          ],
+          excluded_payment_methods: [
+            { id: "bolbradesco" },
+            { id: "pec" },
           ],
           default_payment_method_id: "pix",
           installments: 1,
