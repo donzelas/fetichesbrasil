@@ -18,6 +18,8 @@ interface MessageListProps {
   initialMessages: MessageWithUser[];
   /** Quando true, aplica deslocamento por usuário (faixas) para o admin distinguir falantes. */
   isAdminView?: boolean;
+  /** Username de quem está vendo (vai como marca d'água em imagens efêmeras). */
+  currentUsername?: string | null;
 }
 
 const ADMIN_LANE_CLASSES = ["ml-0", "ml-8", "ml-16"] as const;
@@ -27,6 +29,7 @@ export function MessageList({
   currentUserId,
   initialMessages,
   isAdminView = false,
+  currentUsername,
 }: MessageListProps) {
   const [messages, setMessages] = useState<MessageWithUser[]>(initialMessages);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -152,6 +155,7 @@ export function MessageList({
                     expiresAt={m.expires_at}
                     own={own}
                     isAdmin={isAdminView}
+                    viewerUsername={currentUsername}
                   />
                 </div>
               )}

@@ -19,6 +19,8 @@ interface RoomImageMessageProps {
   expiresAt: string | null;
   own: boolean;
   isAdmin: boolean;
+  /** Username de quem ESTÁ vendo (pra marca d'água no modal). */
+  viewerUsername?: string | null;
 }
 
 export function RoomImageMessage({
@@ -26,6 +28,7 @@ export function RoomImageMessage({
   expiresAt,
   own,
   isAdmin,
+  viewerUsername,
 }: RoomImageMessageProps) {
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState(false);
@@ -37,7 +40,9 @@ export function RoomImageMessage({
   const remaining = expiresAtMs ? expiresAtMs - Date.now() : null;
   const expired = remaining !== null && remaining <= 0;
 
-  const visible = !expired || isAdmin || own;
+  // Snapchat-style: TODO usuário (incluindo o autor) perde acesso depois
+  // dos 5s. Apenas admin retém para auditoria.
+  const visible = !expired || isAdmin;
 
   useEffect(() => {
     if (!visible) {
@@ -70,12 +75,12 @@ export function RoomImageMessage({
     return () => clearInterval(t);
   }, [expiresAtMs, expired]);
 
-  // Fecha modal automaticamente quando expira (não admin/dono)
+  // Fecha modal automaticamente quando expira (regra global, menos admin)
   useEffect(() => {
-    if (open && expired && !isAdmin && !own) {
+    if (open && expired && !isAdmin) {
       setOpen(false);
     }
-  }, [open, expired, isAdmin, own]);
+  }, [open, expired, isAdmin]);
 
   // ESC para fechar modal
   useEffect(() => {
@@ -194,6 +199,11 @@ export function RoomImageMessage({
               )}
             />
 
+            {/* Marca d'água dinâmica — username + timestamp do espectador
+                cobrindo a imagem em diagonal. Serve como rastreabilidade:
+                qualquer print sai com identificação do usuário que vazou. */}
+            <ViewerWatermark username={viewerUsername ?? "anônimo"} />
+
             {hidden && (
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                 <span className="flex items-center gap-2 rounded-full bg-black/90 px-4 py-2 text-sm font-semibold uppercase tracking-wider text-white shadow-2xl">
@@ -215,6 +225,52 @@ export function RoomImageMessage({
         </div>
       )}
     </>
+  );
+}
+
+/**
+ * Marca d'água em diagonal cobrindo a imagem com `@username · HH:MM:SS`
+ * repetido. Atualiza o relógio a cada segundo. Texto translucido pra
+ * não atrapalhar a visualização, mas sempre presente em prints/recordings.
+ */
+function ViewerWatermark({ username }: { username: string }) {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const label = `@${username} · ${now.toLocaleString("pt-BR")}`;
+  const rows = 6;
+  const cols = 3;
+
+  return (
+    <div
+      className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg"
+      aria-hidden
+    >
+      <div
+        className="absolute inset-[-20%] grid"
+        style={{
+          gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+          gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+          transform: "rotate(-30deg)",
+        }}
+      >
+        {Array.from({ length: rows * cols }).map((_, i) => (
+          <div key={i} className="flex items-center justify-center">
+            <span
+              className="select-none whitespace-nowrap text-[11px] font-semibold uppercase tracking-wider text-white/25"
+              style={{
+                textShadow: "0 1px 2px rgba(0,0,0,0.6)",
+              }}
+            >
+              {label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
