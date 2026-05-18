@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import { Preference } from "mercadopago";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { appUrl, getStripe } from "@/lib/stripe/server";
+import { appUrl, getMpClient, webhookUrl } from "@/lib/mercadopago/server";
 
 interface CheckoutBody {
   plan_id: string;
@@ -22,82 +23,109 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
-  const { data: plan, error: planErr } = await admin
-    .from("plans")
+  const { data: planRaw, error: planErr } = await admin
+    .from("plans" as never)
     .select("*")
-    .eq("id", body.plan_id)
-    .eq("is_active", true)
+    .eq("id" as never, body.plan_id)
+    .eq("is_active" as never, true)
     .single();
-  if (planErr || !plan) {
+  if (planErr || !planRaw) {
     return NextResponse.json({ error: "Plano não encontrado ou inativo" }, { status: 404 });
   }
-  if (!plan.stripe_price_id) {
-    return NextResponse.json(
-      { error: "Plano sem preço configurado no Stripe. Recadastre." },
-      { status: 500 }
-    );
-  }
+  const plan = planRaw as unknown as {
+    id: string;
+    title: string;
+    description: string | null;
+    price_cents: number;
+    duration_days: number;
+  };
 
-  let stripe;
+  let mp;
   try {
-    stripe = getStripe();
+    mp = getMpClient();
   } catch (e) {
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Stripe não configurado" },
+      { error: e instanceof Error ? e.message : "Mercado Pago não configurado" },
       { status: 500 }
     );
   }
 
-  const successUrl = `${appUrl()}/premium/sucesso?session_id={CHECKOUT_SESSION_ID}`;
-  const cancelUrl = `${appUrl()}/premium?cancelado=1`;
+  const baseUrl = appUrl();
+  const successUrl = `${baseUrl}/premium/sucesso`;
+  const failureUrl = `${baseUrl}/premium?cancelado=1`;
+  const pendingUrl = `${baseUrl}/premium/sucesso?pendente=1`;
+
+  const amount = Math.round(plan.price_cents) / 100;
+  const externalReference = `${user.id}:${plan.id}:${Date.now()}`;
 
   try {
-    const isSubscription = plan.payment_method === "credit_card";
-    const session = await stripe.checkout.sessions.create({
-      mode: isSubscription ? "subscription" : "payment",
-      customer_email: user.email ?? undefined,
-      line_items: [{ price: plan.stripe_price_id, quantity: 1 }],
-      // Sem `payment_method_types`: o Stripe usa os métodos ATIVADOS na conta
-      // (https://dashboard.stripe.com/settings/payment_methods). Pra Pix funcionar,
-      // ative-o no dashboard. Pra cartão, "card" já vem ligado por padrão.
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      metadata: {
-        user_id: user.id,
-        plan_id: plan.id,
-        duration_days: String(plan.duration_days),
-        payment_method: plan.payment_method,
+    const preference = new Preference(mp);
+    const created = await preference.create({
+      body: {
+        items: [
+          {
+            id: plan.id,
+            title: plan.title,
+            description:
+              plan.description ?? `Premium ${plan.duration_days} dia(s) — Fetiches Brasil`,
+            quantity: 1,
+            unit_price: amount,
+            currency_id: "BRL",
+            category_id: "services",
+          },
+        ],
+        payer: user.email ? { email: user.email } : undefined,
+        // PIX-only: restringe as formas de pagamento do Checkout Pro
+        payment_methods: {
+          excluded_payment_types: [
+            { id: "credit_card" },
+            { id: "debit_card" },
+            { id: "ticket" },
+            { id: "atm" },
+            { id: "bank_transfer" },
+            { id: "prepaid_card" },
+            { id: "digital_currency" },
+          ],
+          default_payment_method_id: "pix",
+          installments: 1,
+        },
+        back_urls: {
+          success: successUrl,
+          failure: failureUrl,
+          pending: pendingUrl,
+        },
+        auto_return: "approved",
+        notification_url: webhookUrl(),
+        external_reference: externalReference,
+        statement_descriptor: "FETICHESBR",
+        metadata: {
+          user_id: user.id,
+          plan_id: plan.id,
+          duration_days: plan.duration_days,
+        },
       },
-      subscription_data: isSubscription
-        ? {
-            metadata: {
-              user_id: user.id,
-              plan_id: plan.id,
-              duration_days: String(plan.duration_days),
-            },
-          }
-        : undefined,
-      payment_intent_data: !isSubscription
-        ? {
-            metadata: {
-              user_id: user.id,
-              plan_id: plan.id,
-              duration_days: String(plan.duration_days),
-            },
-          }
-        : undefined,
     });
 
-    await admin.from("payments").insert({
+    const preferenceId = created.id;
+    const initPoint = created.init_point ?? created.sandbox_init_point;
+
+    if (!preferenceId || !initPoint) {
+      return NextResponse.json(
+        { error: "Falha ao gerar preferência Mercado Pago" },
+        { status: 502 }
+      );
+    }
+
+    await admin.from("payments" as never).insert({
       user_id: user.id,
       plan_id: plan.id,
       amount_cents: plan.price_cents,
-      payment_method: plan.payment_method,
+      payment_method: "pix",
       status: "pending",
-      stripe_session_id: session.id,
-    });
+      mercadopago_preference_id: preferenceId,
+    } as never);
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url: initPoint, preference_id: preferenceId });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro ao criar checkout";
     return NextResponse.json({ error: msg }, { status: 502 });

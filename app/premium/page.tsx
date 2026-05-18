@@ -46,7 +46,7 @@ export default async function PremiumPage() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("plans" as never)
-    .select("id, title, description, price_cents, payment_method, duration_days, sort_order, is_active, stripe_price_id")
+    .select("id, title, description, price_cents, payment_method, duration_days, sort_order, is_active")
     .eq("is_active", true)
     .order("sort_order", { ascending: true })
     .order("price_cents", { ascending: true });

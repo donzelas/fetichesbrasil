@@ -19,9 +19,8 @@ export default async function AdminPlansPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Planos Premium</h1>
         <p className="text-muted-foreground">
-          Crie planos com Pix (pagamento único) ou Cartão (assinatura recorrente).
-          Cada plano define quantos dias de Premium o usuário ganha. Ao salvar,
-          o produto/preço é criado automaticamente no Stripe.
+          Crie planos de Pix (pagamento único). Cada plano define quantos dias de
+          Premium o usuário ganha após o pagamento ser aprovado pelo Mercado Pago.
         </p>
       </div>
 

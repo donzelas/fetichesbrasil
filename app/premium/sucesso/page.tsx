@@ -12,9 +12,19 @@ export const metadata = {
 export default async function PremiumSuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ session_id?: string }>;
+  searchParams: Promise<{
+    payment_id?: string;
+    status?: string;
+    collection_status?: string;
+    preference_id?: string;
+    pendente?: string;
+  }>;
 }) {
-  const { session_id } = await searchParams;
+  const sp = await searchParams;
+  const paymentId = sp.payment_id ?? null;
+  const status = sp.status ?? sp.collection_status ?? null;
+  const preferenceId = sp.preference_id ?? null;
+  const isPending = sp.pendente === "1" || status === "pending" || status === "in_process";
 
   return (
     <div className="container max-w-xl py-16">
@@ -24,25 +34,34 @@ export default async function PremiumSuccessPage({
             <Crown className="h-8 w-8 text-premium-foreground" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Pagamento recebido!</h1>
+            <h1 className="text-2xl font-bold tracking-tight">
+              {isPending ? "Pagamento em processamento" : "Pagamento recebido!"}
+            </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Estamos liberando seu acesso Premium agora.
+              {isPending
+                ? "Assim que o PIX for confirmado pelo Mercado Pago, seu Premium é liberado automaticamente."
+                : "Estamos liberando seu acesso Premium agora."}
             </p>
           </div>
 
           <div className="rounded-xl border border-border/50 bg-card/40 p-4 text-left text-sm">
             <p className="flex items-center gap-2 font-medium">
               <CheckCircle2 className="h-4 w-4 text-green-500" />
-              Pagamento processado pelo Stripe
+              Pagamento processado pelo Mercado Pago
             </p>
             <p className="mt-2 flex items-center gap-2 text-muted-foreground">
               <Clock className="h-4 w-4" />
               A confirmação pode levar alguns segundos. Recarregue se o selo Premium
               ainda não apareceu no seu perfil.
             </p>
-            {session_id && (
+            {paymentId && (
               <p className="mt-2 break-all text-[11px] text-muted-foreground/70">
-                Sessão: {session_id}
+                Pagamento: {paymentId}
+              </p>
+            )}
+            {!paymentId && preferenceId && (
+              <p className="mt-2 break-all text-[11px] text-muted-foreground/70">
+                Pedido: {preferenceId}
               </p>
             )}
           </div>

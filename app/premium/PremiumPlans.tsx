@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CreditCard, Crown, Loader2, QrCode } from "lucide-react";
+import { Crown, Loader2, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,11 +11,10 @@ export interface PublicPlan {
   title: string;
   description: string | null;
   price_cents: number;
-  payment_method: "pix" | "credit_card";
+  payment_method: "pix";
   duration_days: number;
   sort_order: number;
   is_active: boolean;
-  stripe_price_id: string | null;
 }
 
 function formatBRL(cents: number) {
@@ -29,10 +28,6 @@ export function PremiumPlans({ plans }: { plans: PublicPlan[] }) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   async function handleSubscribe(plan: PublicPlan) {
-    if (!plan.stripe_price_id) {
-      toast.error("Plano sem preço Stripe configurado.");
-      return;
-    }
     setLoadingId(plan.id);
     try {
       const res = await fetch("/api/checkout", {
@@ -75,18 +70,14 @@ export function PremiumPlans({ plans }: { plans: PublicPlan[] }) {
   return (
     <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {plans.map((p) => {
-        const isSub = p.payment_method === "credit_card";
-        const monthly = isSub
-          ? Math.round((p.price_cents / p.duration_days) * 30)
-          : null;
         return (
           <Card
             key={p.id}
             className="relative overflow-hidden border-premium/30 shadow-xl shadow-premium/5 transition hover:border-premium/60"
           >
             <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-premium/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-premium">
-              {isSub ? <CreditCard className="h-3 w-3" /> : <QrCode className="h-3 w-3" />}
-              {isSub ? "Cartão" : "Pix"}
+              <QrCode className="h-3 w-3" />
+              Pix
             </div>
             <CardContent className="p-6">
               <h3 className="text-lg font-bold">{p.title}</h3>
@@ -101,20 +92,9 @@ export function PremiumPlans({ plans }: { plans: PublicPlan[] }) {
                 </span>
               </div>
 
-              {monthly && monthly !== p.price_cents && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  ≈ {formatBRL(monthly)} por mês
-                </p>
-              )}
-
               <p className="mt-2 text-xs text-muted-foreground">
-                {isSub
-                  ? `Cobrado a cada ${p.duration_days} dia${
-                      p.duration_days === 1 ? "" : "s"
-                    } automaticamente. Cancele quando quiser.`
-                  : `Pagamento único. ${p.duration_days} dia${
-                      p.duration_days === 1 ? "" : "s"
-                    } de Premium. Expira automaticamente.`}
+                Pagamento único via Pix. {p.duration_days} dia
+                {p.duration_days === 1 ? "" : "s"} de Premium. Expira automaticamente.
               </p>
 
               <Button
@@ -129,12 +109,12 @@ export function PremiumPlans({ plans }: { plans: PublicPlan[] }) {
                 ) : (
                   <>
                     <Crown className="h-4 w-4" />
-                    Assinar agora
+                    Pagar com Pix
                   </>
                 )}
               </Button>
               <p className="mt-3 text-center text-[11px] text-muted-foreground">
-                Pagamento seguro · Stripe
+                Pagamento seguro · Mercado Pago
               </p>
             </CardContent>
           </Card>

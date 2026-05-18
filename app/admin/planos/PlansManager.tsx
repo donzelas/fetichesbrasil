@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CreditCard, Loader2, Pencil, Plus, QrCode, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Plus, QrCode, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -12,10 +12,8 @@ export interface PlanRecord {
   title: string;
   description: string | null;
   price_cents: number;
-  payment_method: "pix" | "credit_card";
+  payment_method: "pix";
   duration_days: number;
-  stripe_product_id: string | null;
-  stripe_price_id: string | null;
   is_active: boolean;
   sort_order: number;
   created_at: string;
@@ -100,11 +98,7 @@ export function PlansManager({ initialPlans }: { initialPlans: PlanRecord[] }) {
               className="flex flex-wrap items-center gap-3 bg-card/40 p-3 transition hover:bg-card/70"
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                {p.payment_method === "credit_card" ? (
-                  <CreditCard className="h-5 w-5" />
-                ) : (
-                  <QrCode className="h-5 w-5" />
-                )}
+                <QrCode className="h-5 w-5" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
@@ -112,21 +106,10 @@ export function PlansManager({ initialPlans }: { initialPlans: PlanRecord[] }) {
                   <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
                     #{p.sort_order}
                   </span>
-                  {!p.stripe_price_id && (
-                    <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-600">
-                      sem stripe
-                    </span>
-                  )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {formatBRL(p.price_cents)} ·{" "}
-                  {p.payment_method === "credit_card"
-                    ? `assinatura a cada ${p.duration_days} dia${
-                        p.duration_days === 1 ? "" : "s"
-                      }`
-                    : `Pix · ${p.duration_days} dia${
-                        p.duration_days === 1 ? "" : "s"
-                      } de Premium`}
+                  {formatBRL(p.price_cents)} · Pix · {p.duration_days} dia
+                  {p.duration_days === 1 ? "" : "s"} de Premium
                 </p>
                 {p.description && (
                   <p className="mt-0.5 truncate text-xs text-muted-foreground/80">

@@ -196,8 +196,8 @@ export default async function AdminHomePage() {
                 Planos Premium
               </h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                Criar/editar planos por valor, forma de pagamento (Pix/Cartão) e
-                duração em dias. Integração Stripe automática.
+                Criar/editar planos por valor e duração em dias. Pagamentos via
+                PIX pelo Mercado Pago.
               </p>
             </CardContent>
           </Card>

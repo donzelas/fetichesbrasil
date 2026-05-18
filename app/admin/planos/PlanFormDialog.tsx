@@ -34,9 +34,6 @@ export function PlanFormDialog({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priceReais, setPriceReais] = useState<string>("");
-  const [paymentMethod, setPaymentMethod] = useState<"pix" | "credit_card">(
-    "credit_card"
-  );
   const [durationDays, setDurationDays] = useState<number>(30);
   const [sortOrder, setSortOrder] = useState<number>(0);
   const [isActive, setIsActive] = useState(true);
@@ -48,7 +45,6 @@ export function PlanFormDialog({
       setTitle(editing.title);
       setDescription(editing.description ?? "");
       setPriceReais((editing.price_cents / 100).toFixed(2));
-      setPaymentMethod(editing.payment_method);
       setDurationDays(editing.duration_days);
       setSortOrder(editing.sort_order);
       setIsActive(editing.is_active);
@@ -56,7 +52,6 @@ export function PlanFormDialog({
       setTitle("");
       setDescription("");
       setPriceReais("");
-      setPaymentMethod("credit_card");
       setDurationDays(30);
       setSortOrder(0);
       setIsActive(true);
@@ -75,19 +70,20 @@ export function PlanFormDialog({
 
     setSaving(true);
     try {
+      const payload = {
+        title: title.trim(),
+        description: description.trim() || null,
+        price_cents: Math.round(price * 100),
+        duration_days: durationDays,
+        is_active: isActive,
+        sort_order: sortOrder,
+      };
+
       if (editing) {
         const res = await fetch(`/api/admin/plans/${editing.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: title.trim(),
-            description: description.trim() || null,
-            price_cents: Math.round(price * 100),
-            payment_method: paymentMethod,
-            duration_days: durationDays,
-            is_active: isActive,
-            sort_order: sortOrder,
-          }),
+          body: JSON.stringify(payload),
         });
         if (!res.ok) {
           const json = await res.json().catch(() => ({}));
@@ -98,21 +94,13 @@ export function PlanFormDialog({
         const res = await fetch("/api/admin/plans", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: title.trim(),
-            description: description.trim() || null,
-            price_cents: Math.round(price * 100),
-            payment_method: paymentMethod,
-            duration_days: durationDays,
-            is_active: isActive,
-            sort_order: sortOrder,
-          }),
+          body: JSON.stringify(payload),
         });
         if (!res.ok) {
           const json = await res.json().catch(() => ({}));
           throw new Error(json.error ?? "Erro ao criar");
         }
-        toast.success("Plano criado e publicado no Stripe.");
+        toast.success("Plano criado.");
       }
       onSaved?.();
     } catch (e) {
@@ -130,8 +118,8 @@ export function PlanFormDialog({
         <DialogHeader>
           <DialogTitle>{editing ? "Editar plano" : "Novo plano"}</DialogTitle>
           <DialogDescription>
-            Configure título, valor, forma de pagamento e duração em dias. Ao salvar,
-            o produto e o preço são publicados (ou atualizados) no Stripe automaticamente.
+            Configure título, valor e duração em dias. Todos os planos são cobrados
+            via Pix (pagamento único) pelo Mercado Pago.
           </DialogDescription>
         </DialogHeader>
 
@@ -172,23 +160,6 @@ export function PlanFormDialog({
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="plan-method">Forma de pagamento</Label>
-              <select
-                id="plan-method"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                value={paymentMethod}
-                onChange={(e) =>
-                  setPaymentMethod(e.target.value as "pix" | "credit_card")
-                }
-              >
-                <option value="credit_card">Cartão (assinatura recorrente)</option>
-                <option value="pix">Pix (pagamento único)</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-1.5">
               <Label htmlFor="plan-days">Duração (dias)</Label>
               <Input
                 id="plan-days"
@@ -200,11 +171,12 @@ export function PlanFormDialog({
                 }
               />
               <p className="text-[11px] text-muted-foreground">
-                {paymentMethod === "credit_card"
-                  ? "Intervalo de cobrança da assinatura."
-                  : "Tempo de Premium concedido após o Pix."}
+                Tempo de Premium concedido após o Pix.
               </p>
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
               <Label htmlFor="plan-order">Ordem</Label>
               <Input
@@ -216,24 +188,15 @@ export function PlanFormDialog({
                 }
               />
             </div>
+            <div className="flex items-end gap-2">
+              <Switch
+                checked={isActive}
+                onCheckedChange={setIsActive}
+                id="plan-active"
+              />
+              <Label htmlFor="plan-active">Ativo (aparece em /premium)</Label>
+            </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <Switch
-              checked={isActive}
-              onCheckedChange={setIsActive}
-              id="plan-active"
-            />
-            <Label htmlFor="plan-active">Ativo (aparece na página /premium)</Label>
-          </div>
-
-          {editing && (
-            <p className="rounded-md border border-amber-500/30 bg-amber-500/5 p-2 text-[11px] text-amber-700 dark:text-amber-400">
-              Mudar valor, forma de pagamento ou duração cria um novo preço no Stripe
-              e desativa o anterior. Assinaturas em andamento continuam ativas até a
-              próxima cobrança.
-            </p>
-          )}
         </div>
 
         <DialogFooter>
