@@ -21,7 +21,6 @@ interface ImageMessageRow {
   image_path: string;
   expires_at: string | null;
   created_at: string;
-  room: RoomLite | null;
 }
 
 type RangeKey = "24h" | "7d" | "30d" | "all";
@@ -37,7 +36,7 @@ function parseRange(input: string | undefined): RangeKey {
   const valid = RANGES.map((r) => r.id);
   return (valid as string[]).includes(input ?? "")
     ? (input as RangeKey)
-    : "7d";
+    : "all";
 }
 
 export default async function AdminRoomImagesPage({
@@ -54,12 +53,10 @@ export default async function AdminRoomImagesPage({
     ? new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
     : null;
 
+  // Query 1 — todas mensagens com image_path no período
   let query = supabase
     .from("messages")
-    .select(
-      `id, room_id, user_id, image_path, expires_at, created_at,
-       room:chat_rooms!messages_room_id_fkey(id, name, owner_id, deleted_at)`
-    )
+    .select("id, room_id, user_id, image_path, expires_at, created_at")
     .not("image_path", "is", null)
     .order("created_at", { ascending: false })
     .limit(5000);
@@ -68,8 +65,23 @@ export default async function AdminRoomImagesPage({
     query = query.gte("created_at", sinceIso);
   }
 
-  const { data: rowsRaw } = await query;
-  const rows = (rowsRaw ?? []) as unknown as ImageMessageRow[];
+  const { data: rowsRaw, error: rowsErr } = await query;
+  if (rowsErr) {
+    console.error("[admin/salas-imagens] erro ao buscar mensagens:", rowsErr);
+  }
+  const rows = (rowsRaw ?? []) as ImageMessageRow[];
+
+  // Query 2 — salas referenciadas (em separado, robusto contra deleted_at
+  // e contra problemas de embedding/RLS no PostgREST)
+  const roomIds = Array.from(new Set(rows.map((r) => r.room_id)));
+  const roomById = new Map<string, RoomLite>();
+  if (roomIds.length > 0) {
+    const { data: roomsRaw } = await supabase
+      .from("chat_rooms")
+      .select("id, name, owner_id, deleted_at")
+      .in("id", roomIds);
+    for (const r of roomsRaw ?? []) roomById.set(r.id, r as RoomLite);
+  }
 
   type RoomAgg = {
     room: RoomLite;
@@ -81,8 +93,15 @@ export default async function AdminRoomImagesPage({
   const now = Date.now();
 
   for (const r of rows) {
-    if (!r.room) continue;
-    const existing = aggMap.get(r.room.id);
+    const room =
+      roomById.get(r.room_id) ??
+      ({
+        id: r.room_id,
+        name: "(sala desconhecida)",
+        owner_id: null,
+        deleted_at: null,
+      } as RoomLite);
+    const existing = aggMap.get(room.id);
     const isExpired =
       r.expires_at !== null && new Date(r.expires_at).getTime() < now;
     if (existing) {
@@ -90,8 +109,8 @@ export default async function AdminRoomImagesPage({
       if (isExpired) existing.expired += 1;
       if (r.created_at > existing.lastAt) existing.lastAt = r.created_at;
     } else {
-      aggMap.set(r.room.id, {
-        room: r.room,
+      aggMap.set(room.id, {
+        room,
         total: 1,
         expired: isExpired ? 1 : 0,
         lastAt: r.created_at,

@@ -64,18 +64,37 @@ export default async function AdminRoomImagesDetailPage({
   if (!roomRaw) notFound();
   const room = roomRaw as unknown as RoomDetail;
 
-  const { data: messagesRaw } = await supabase
+  const { data: messagesRaw, error: messagesErr } = await supabase
     .from("messages")
-    .select(
-      `id, room_id, user_id, content, image_path, expires_at, created_at,
-       user:profiles!messages_user_id_fkey(id, username, display_name, avatar_url)`
-    )
+    .select("id, room_id, user_id, content, image_path, expires_at, created_at")
     .eq("room_id", id)
     .not("image_path", "is", null)
     .order("created_at", { ascending: false })
     .limit(2000);
 
-  const messages = (messagesRaw ?? []) as unknown as MessageImageRow[];
+  if (messagesErr) {
+    console.error("[admin/salas-imagens/detail] erro:", messagesErr);
+  }
+
+  const messagesBase = (messagesRaw ?? []) as Omit<MessageImageRow, "user">[];
+
+  // Busca perfis em separado (mais robusto que embed via PostgREST)
+  const userIds = Array.from(new Set(messagesBase.map((m) => m.user_id)));
+  const profileById = new Map<string, ProfileLite>();
+  if (userIds.length > 0) {
+    const { data: profilesRaw } = await supabase
+      .from("profiles")
+      .select("id, username, display_name, avatar_url")
+      .in("id", userIds);
+    for (const p of profilesRaw ?? []) {
+      profileById.set(p.id, p as ProfileLite);
+    }
+  }
+
+  const messages: MessageImageRow[] = messagesBase.map((m) => ({
+    ...m,
+    user: profileById.get(m.user_id) ?? null,
+  }));
 
   // Signed URLs em batch (via service role para não tropeçar em RLS)
   const admin = createAdminClient();
