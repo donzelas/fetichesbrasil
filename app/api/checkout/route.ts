@@ -75,10 +75,10 @@ export async function POST(request: Request) {
           },
         ],
         payer: user.email ? { email: user.email } : undefined,
-        // PIX-only: PIX pertence ao payment_type `bank_transfer`, entao NAO podemos
-        // excluir bank_transfer. Excluimos tudo o mais. Para garantir mesmo no caso
-        // do MP introduzir outro metodo bank_transfer no futuro, listamos boleto/lotericas
-        // em excluded_payment_methods.
+        // PIX-only: PIX pertence ao payment_type `bank_transfer`. Excluimos
+        // todos os outros types (cartao, boleto, dinheiro em loterica, etc.)
+        // Nao usamos `default_payment_method_id` porque MP retorna 400 quando
+        // o valor coincide com algum dos types excluidos.
         payment_methods: {
           excluded_payment_types: [
             { id: "credit_card" },
@@ -88,12 +88,6 @@ export async function POST(request: Request) {
             { id: "prepaid_card" },
             { id: "digital_currency" },
           ],
-          excluded_payment_methods: [
-            { id: "bolbradesco" },
-            { id: "pec" },
-          ],
-          default_payment_method_id: "pix",
-          installments: 1,
         },
         back_urls: {
           success: successUrl,
