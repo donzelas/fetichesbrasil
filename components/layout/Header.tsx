@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Crown, LogOut, Plus, Shield, User as UserIcon, Sparkles } from "lucide-react";
+import { ChevronDown, Crown, LogOut, Plus, Shield, User as UserIcon } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -49,16 +50,20 @@ export function Header() {
     <header className="sticky top-0 z-40 w-full border-b border-border/50 glass">
       <div className="container flex h-16 items-center justify-between">
         <Link href={logoHref} className="flex items-center gap-2 font-bold">
-          {isAdmin ? (
-            <Shield className="h-6 w-6 text-primary" />
-          ) : (
-            <Sparkles className="h-6 w-6 text-primary" />
-          )}
+          <Image
+            src="/logo.jpeg"
+            alt="Fetiches Brasil"
+            width={36}
+            height={36}
+            priority
+            className="h-9 w-9 rounded-md object-cover"
+          />
           <span className="text-lg tracking-tight">
             Fetiches <span className="text-primary">Brasil</span>
             {isAdmin && (
-              <span className="ml-2 text-xs font-normal text-muted-foreground">
-                · Admin
+              <span className="ml-2 inline-flex items-center gap-1 text-xs font-normal text-muted-foreground">
+                <Shield className="h-3 w-3" />
+                Admin
               </span>
             )}
           </span>

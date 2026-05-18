@@ -1,8 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Sparkles } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
 import { createClient } from "@/lib/supabase/client";
 import { PrivacyPolicyTrigger, TermsOfUseTrigger } from "@/components/legal/LegalDialogs";
@@ -29,7 +29,13 @@ export function Footer() {
       <div className="container py-4">
         <div className="flex flex-col items-center gap-3 text-center md:flex-row md:justify-between md:text-left">
           <Link href="/" className="flex items-center gap-2 text-sm font-semibold">
-            <Sparkles className="h-4 w-4 text-primary" />
+            <Image
+              src="/logo.jpeg"
+              alt="Fetiches Brasil"
+              width={24}
+              height={24}
+              className="h-6 w-6 rounded object-cover"
+            />
             Fetiches Brasil
           </Link>
 
