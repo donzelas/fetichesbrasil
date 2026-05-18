@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Shield } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -64,9 +65,14 @@ export function AdminLoginForm() {
     <div className="container flex min-h-[calc(100vh-8rem)] items-center justify-center py-12">
       <Card className="w-full max-w-sm border-primary/30">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <Shield className="h-6 w-6 text-primary" />
-          </div>
+          <Image
+            src="/logo.png"
+            alt="Fetiches Brasil"
+            width={64}
+            height={64}
+            priority
+            className="mx-auto mb-3 h-16 w-16 object-contain"
+          />
           <CardTitle>Painel Administrativo</CardTitle>
           <CardDescription>Acesso restrito a administradores.</CardDescription>
         </CardHeader>

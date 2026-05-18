@@ -19,12 +19,12 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
           className="mb-8 flex items-center justify-center gap-3 font-bold text-xl"
         >
           <Image
-            src="/logo.jpeg"
+            src="/logo.png"
             alt="Fetiches Brasil"
-            width={48}
-            height={48}
+            width={56}
+            height={56}
             priority
-            className="h-12 w-12 rounded-lg object-cover"
+            className="h-14 w-14 object-contain"
           />
           Fetiches <span className="text-primary">Brasil</span>
         </Link>
