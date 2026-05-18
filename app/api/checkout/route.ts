@@ -116,18 +116,64 @@ export async function POST(request: Request) {
       );
     }
 
-    await admin.from("payments" as never).insert({
-      user_id: user.id,
-      plan_id: plan.id,
-      amount_cents: plan.price_cents,
-      payment_method: "pix",
-      status: "pending",
-      mercadopago_preference_id: preferenceId,
-    } as never);
+    const { error: insertErr } = await admin
+      .from("payments" as never)
+      .insert({
+        user_id: user.id,
+        plan_id: plan.id,
+        amount_cents: plan.price_cents,
+        payment_method: "pix",
+        status: "pending",
+        mercadopago_preference_id: preferenceId,
+      } as never);
+
+    if (insertErr) {
+      console.error("[checkout] insert payments falhou:", insertErr);
+      return NextResponse.json(
+        {
+          error: "Falha ao registrar pagamento",
+          details: insertErr.message,
+          hint: insertErr.hint ?? null,
+          code: insertErr.code ?? null,
+        },
+        { status: 502 }
+      );
+    }
 
     return NextResponse.json({ url: initPoint, preference_id: preferenceId });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "Erro ao criar checkout";
-    return NextResponse.json({ error: msg }, { status: 502 });
+  } catch (e: unknown) {
+    // O SDK do Mercado Pago joga objetos custom (não Error) com shape
+    // { message, status, cause: [{ code, description }] }. Capturamos tudo
+    // para conseguir diagnosticar.
+    console.error("[checkout] MP preference.create falhou:", e);
+
+    const err = e as {
+      message?: string;
+      status?: number;
+      cause?: Array<{ code?: string | number; description?: string }> | unknown;
+      error?: string;
+    };
+
+    const message =
+      err?.message ??
+      err?.error ??
+      (e instanceof Error ? e.message : "Erro ao criar checkout");
+
+    const cause = Array.isArray(err?.cause)
+      ? err.cause
+          .map((c) => `${c.code ?? ""}: ${c.description ?? ""}`.trim())
+          .filter(Boolean)
+          .join(" | ")
+      : null;
+
+    return NextResponse.json(
+      {
+        error: message,
+        cause,
+        status: err?.status ?? null,
+        raw: typeof e === "object" ? JSON.parse(JSON.stringify(e)) : String(e),
+      },
+      { status: 502 }
+    );
   }
 }
