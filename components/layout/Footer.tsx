@@ -30,11 +30,11 @@ export function Footer() {
         <div className="flex flex-col items-center gap-3 text-center md:flex-row md:justify-between md:text-left">
           <Link href="/" className="flex items-center gap-2 text-sm font-semibold">
             <Image
-              src="/logo.jpeg"
+              src="/logo.png"
               alt="Fetiches Brasil"
-              width={24}
-              height={24}
-              className="h-6 w-6 rounded object-cover"
+              width={28}
+              height={28}
+              className="h-7 w-7 object-contain"
             />
             Fetiches Brasil
           </Link>

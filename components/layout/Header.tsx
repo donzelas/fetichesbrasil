@@ -51,12 +51,12 @@ export function Header() {
       <div className="container flex h-16 items-center justify-between">
         <Link href={logoHref} className="flex items-center gap-2 font-bold">
           <Image
-            src="/logo.jpeg"
+            src="/logo.png"
             alt="Fetiches Brasil"
-            width={36}
-            height={36}
+            width={40}
+            height={40}
             priority
-            className="h-9 w-9 rounded-md object-cover"
+            className="h-10 w-10 object-contain"
           />
           <span className="text-lg tracking-tight">
             Fetiches <span className="text-primary">Brasil</span>

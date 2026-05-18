@@ -7,6 +7,13 @@
 -- foto, o INSERT no storage.objects era bloqueado com
 -- "new row violates row-level security policy".
 --
+-- ALEM DISSO: a versao anterior tinha um bug de ambiguidade
+-- (split_part(name, ...)) dentro de um EXISTS sobre chat_rooms, e o
+-- Postgres resolvia `name` como `chat_rooms.name` (nome da SALA) em
+-- vez de `storage.objects.name` (path do arquivo). Resultado: o EXISTS
+-- nunca passava e a policy ficava efetivamente travada. Qualificamos
+-- com `storage.objects.name` para eliminar a ambiguidade.
+--
 -- Tambem reforcamos o messages_insert_premium adicionando is_admin()
 -- como caminho alternativo, para manter consistencia em toda a stack.
 
@@ -16,15 +23,34 @@ on storage.objects for insert
 to authenticated
 with check (
   bucket_id = 'room-images'
-  and split_part(name, '/', 2) = auth.uid()::text
+  and split_part(storage.objects.name, '/', 2) = auth.uid()::text
   and (
     public.is_admin()
     or exists (
       select 1
-        from public.chat_rooms r
-       where r.id::text = split_part(name, '/', 1)
-         and r.deleted_at is null
-         and (public.is_premium() or r.owner_id = auth.uid())
+        from public.chat_rooms cr
+       where cr.id::text = split_part(storage.objects.name, '/', 1)
+         and cr.deleted_at is null
+         and (public.is_premium() or cr.owner_id = auth.uid())
+    )
+  )
+);
+
+-- Mesma correcao no SELECT, por consistencia.
+drop policy if exists "room_images_select" on storage.objects;
+create policy "room_images_select"
+on storage.objects for select
+to authenticated
+using (
+  bucket_id = 'room-images'
+  and (
+    public.is_admin()
+    or public.is_premium()
+    or exists (
+      select 1
+        from public.chat_rooms cr
+       where cr.id::text = split_part(storage.objects.name, '/', 1)
+         and cr.owner_id = auth.uid()
     )
   )
 );

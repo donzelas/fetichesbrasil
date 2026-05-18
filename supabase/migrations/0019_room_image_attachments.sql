@@ -58,29 +58,37 @@ using (
     or public.is_premium()
     or exists (
       select 1
-        from public.chat_rooms r
-       where r.id::text = split_part(name, '/', 1)
-         and r.owner_id = auth.uid()
+        from public.chat_rooms cr
+       where cr.id::text = split_part(storage.objects.name, '/', 1)
+         and cr.owner_id = auth.uid()
     )
   )
 );
 
 -- INSERT: o próprio uploader vai na 2ª parte do path; a sala precisa
 -- existir e não estar deletada; usuário precisa poder mandar mensagem
--- naquela sala (premium OR dono).
+-- naquela sala (premium OR dono) OU ser admin.
+--
+-- IMPORTANTE: usamos `storage.objects.name` qualificado dentro do EXISTS
+-- porque `chat_rooms` também tem coluna `name`, e o Postgres resolveria
+-- `name` para `chat_rooms.name` (bug clássico de ambiguidade que faz a
+-- policy NUNCA passar e devolver "new row violates row-level security").
 drop policy if exists "room_images_insert" on storage.objects;
 create policy "room_images_insert"
 on storage.objects for insert
 to authenticated
 with check (
   bucket_id = 'room-images'
-  and split_part(name, '/', 2) = auth.uid()::text
-  and exists (
-    select 1
-      from public.chat_rooms r
-     where r.id::text = split_part(name, '/', 1)
-       and r.deleted_at is null
-       and (public.is_premium() or r.owner_id = auth.uid())
+  and split_part(storage.objects.name, '/', 2) = auth.uid()::text
+  and (
+    public.is_admin()
+    or exists (
+      select 1
+        from public.chat_rooms cr
+       where cr.id::text = split_part(storage.objects.name, '/', 1)
+         and cr.deleted_at is null
+         and (public.is_premium() or cr.owner_id = auth.uid())
+    )
   )
 );
 
