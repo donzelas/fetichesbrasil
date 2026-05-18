@@ -17,6 +17,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+/** Calcula quantos dias inteiros faltam para o Premium expirar.
+ *  Retorna null se nao tiver data ou se ja expirou. */
+function daysUntilPremiumExpires(expiresAt: string | null | undefined): number | null {
+  if (!expiresAt) return null;
+  const end = new Date(expiresAt).getTime();
+  const now = Date.now();
+  if (end <= now) return 0;
+  return Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+}
+
 export function Header() {
   const { user, profile, isPremium, isAdmin, loading } = useUser();
   const router = useRouter();
@@ -29,6 +39,11 @@ export function Header() {
   }
 
   const logoHref = isAdmin ? "/admin" : "/";
+
+  // premium_expires_at nao esta nos types gerados (foi adicionado em 0016).
+  const premiumExpiresAt = (profile as { premium_expires_at?: string | null } | null)
+    ?.premium_expires_at ?? null;
+  const daysLeft = isPremium ? daysUntilPremiumExpires(premiumExpiresAt) : null;
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/50 glass">
@@ -154,6 +169,11 @@ export function Header() {
                 <Badge variant="premium" className="hidden sm:inline-flex">
                   <Crown className="mr-1 h-3 w-3" />
                   Premium
+                  {daysLeft !== null && (
+                    <span className="ml-1.5 opacity-80">
+                      · {daysLeft}d
+                    </span>
+                  )}
                 </Badge>
               )}
               {isPremium && (
@@ -202,12 +222,29 @@ export function Header() {
                     </DropdownMenuItem>
                   )}
                   {isPremium && (
-                    <DropdownMenuItem asChild>
-                      <Link href="/salas/nova">
-                        <Plus className="h-4 w-4" />
-                        Criar sala
-                      </Link>
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuItem disabled className="text-premium opacity-100 focus:bg-transparent">
+                        <Crown className="h-4 w-4" />
+                        <div className="flex flex-col">
+                          <span className="text-sm font-semibold">Premium ativo</span>
+                          {daysLeft !== null && (
+                            <span className="text-[11px] font-normal text-muted-foreground">
+                              {daysLeft === 0
+                                ? "Expira hoje"
+                                : daysLeft === 1
+                                ? "1 dia restante"
+                                : `${daysLeft} dias restantes`}
+                            </span>
+                          )}
+                        </div>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/salas/nova">
+                          <Plus className="h-4 w-4" />
+                          Criar sala
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
                   )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
