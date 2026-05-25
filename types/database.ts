@@ -673,6 +673,48 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["tiktok_metrics"]["Insert"]>;
         Relationships: [];
       };
+      page_views: {
+        Row: {
+          id: string;
+          path: string;
+          full_url: string | null;
+          referrer: string | null;
+          user_agent: string | null;
+          ip_hash: string | null;
+          country: string | null;
+          region: string | null;
+          city: string | null;
+          device_type: "mobile" | "tablet" | "desktop" | "bot" | "unknown" | null;
+          browser: string | null;
+          os: string | null;
+          user_id: string | null;
+          session_id: string | null;
+          is_authenticated: boolean;
+          is_admin_view: boolean;
+          viewed_at: string;
+        };
+        Insert: {
+          id?: string;
+          path: string;
+          full_url?: string | null;
+          referrer?: string | null;
+          user_agent?: string | null;
+          ip_hash?: string | null;
+          country?: string | null;
+          region?: string | null;
+          city?: string | null;
+          device_type?: "mobile" | "tablet" | "desktop" | "bot" | "unknown" | null;
+          browser?: string | null;
+          os?: string | null;
+          user_id?: string | null;
+          session_id?: string | null;
+          is_authenticated?: boolean;
+          is_admin_view?: boolean;
+          viewed_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["page_views"]["Insert"]>;
+        Relationships: [];
+      };
       tiktok_settings: {
         Row: {
           id: boolean;
@@ -778,6 +820,49 @@ export interface Database {
         Args: { p_data: Record<string, unknown> };
         Returns: undefined;
       };
+      analytics_totals: {
+        Args: { p_days?: number };
+        Returns: Array<{
+          total_views: number;
+          unique_sessions: number;
+          unique_visitors: number;
+          authenticated_views: number;
+          countries: number;
+        }>;
+      };
+      analytics_top_pages: {
+        Args: { p_days?: number; p_limit?: number };
+        Returns: Array<{ path: string; views: number; uniques: number }>;
+      };
+      analytics_top_referrers: {
+        Args: { p_days?: number; p_limit?: number };
+        Returns: Array<{ referrer: string; views: number }>;
+      };
+      analytics_by_country: {
+        Args: { p_days?: number };
+        Returns: Array<{ country: string; views: number; uniques: number }>;
+      };
+      analytics_by_device: {
+        Args: { p_days?: number };
+        Returns: Array<{
+          device_type: string;
+          browser: string;
+          os: string;
+          views: number;
+        }>;
+      };
+      analytics_by_hour: {
+        Args: Record<PropertyKey, never>;
+        Returns: Array<{ hour: string; views: number; uniques: number }>;
+      };
+      analytics_by_day: {
+        Args: { p_days?: number };
+        Returns: Array<{ day: string; views: number; uniques: number }>;
+      };
+      analytics_bots: {
+        Args: { p_days?: number };
+        Returns: Array<{ browser: string; views: number; paths: number }>;
+      };
     };
     Enums: {
       [_ in never]: never;
@@ -823,3 +908,4 @@ export type CategoryWithFetishes = Category & {
 export type TiktokScript = Tables<"tiktok_scripts">;
 export type TiktokMetric = Tables<"tiktok_metrics">;
 export type TiktokSettings = Tables<"tiktok_settings">;
+export type PageView = Tables<"page_views">;

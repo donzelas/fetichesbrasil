@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   Activity,
+  BarChart3,
   Crown,
   FileText,
   Flame,
@@ -41,6 +42,7 @@ export default async function AdminHomePage() {
     { count: postedTiktok },
     { count: totalFetishes },
     { count: fetishesWithSeo },
+    { count: pageViews24h },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -107,6 +109,11 @@ export default async function AdminHomePage() {
       .from("fetishes")
       .select("*", { count: "exact", head: true })
       .not("seo_content", "is", null),
+    supabase
+      .from("page_views")
+      .select("*", { count: "exact", head: true })
+      .gte("viewed_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+      .eq("is_admin_view", false),
   ]);
 
   const liveTotal = (liveRoomMessages ?? 0) + (liveDmMessages ?? 0);
@@ -218,6 +225,16 @@ export default async function AdminHomePage() {
               ? { count: (totalFetishes ?? 0) - (fetishesWithSeo ?? 0), tone: "amber" }
               : undefined,
           icon: FileText,
+        },
+        {
+          href: "/admin/analytics",
+          title: "Analytics",
+          desc: `${pageViews24h ?? 0} visualizações nas últimas 24h · quem acessa, de onde, qual dispositivo.`,
+          badge:
+            (pageViews24h ?? 0) > 0
+              ? { count: pageViews24h ?? 0, tone: "primary" }
+              : undefined,
+          icon: BarChart3,
         },
       ],
     },

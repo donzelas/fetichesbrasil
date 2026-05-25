@@ -1,11 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { Suspense } from "react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { AgeGate } from "@/components/layout/AgeGate";
 import { AutoLogout } from "@/components/auth/AutoLogout";
 import { Toaster } from "@/components/ui/sonner";
 import { OrganizationJsonLd, WebsiteJsonLd } from "@/components/seo/JsonLd";
+import { PageViewTracker } from "@/components/analytics/PageViewTracker";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://fetichesbrasil.com.br";
 
@@ -99,6 +101,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-background font-sans antialiased">
         <AgeGate />
         <AutoLogout />
+        <Suspense fallback={null}>
+          <PageViewTracker />
+        </Suspense>
         <div className="flex min-h-screen flex-col">
           <Header />
           <main className="flex-1">{children}</main>
