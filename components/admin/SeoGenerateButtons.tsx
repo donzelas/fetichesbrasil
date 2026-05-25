@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { Loader2, RefreshCw, Sparkles, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
@@ -11,65 +11,143 @@ interface Props {
   total: number;
 }
 
+interface Progress {
+  running: boolean;
+  done: number;
+  failed: number;
+  current: string | null;
+  abort: boolean;
+  mode: "pending" | "all";
+  total: number;
+}
+
+const DELAY_BETWEEN_CALLS_MS = 2500; // respeita rate limit Groq
+
 export function SeoGenerateButtons({ pending, total }: Props) {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState<Progress | null>(null);
 
-  async function trigger(body: Record<string, unknown>, msg: string) {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/admin/seo/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+  // Auto-refresh do dashboard a cada 5s durante geracao
+  useEffect(() => {
+    if (!progress?.running) return;
+    const id = window.setInterval(() => router.refresh(), 5000);
+    return () => window.clearInterval(id);
+  }, [progress?.running, router]);
+
+  async function runLoop(mode: "pending" | "all", limit: number) {
+    setProgress({
+      running: true,
+      done: 0,
+      failed: 0,
+      current: null,
+      abort: false,
+      mode,
+      total: limit,
+    });
+
+    let done = 0;
+    let failed = 0;
+    let stopped = false;
+
+    for (let i = 0; i < limit; i++) {
+      // Verifica se usuario clicou em parar
+      setProgress((prev) => {
+        if (prev?.abort) stopped = true;
+        return prev;
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        toast.error("Erro ao iniciar geração", {
-          description: data.error ?? "Erro desconhecido",
+      if (stopped) break;
+
+      try {
+        const res = await fetch("/api/admin/seo/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mode: "next", force: mode === "all" }),
         });
-        return;
+        const data = await res.json();
+
+        if (data.done) {
+          // Acabaram os pendentes
+          break;
+        }
+        if (!res.ok) {
+          failed++;
+          toast.error(`Falha em ${data.slug ?? "?"}`, {
+            description: data.error ?? "erro desconhecido",
+          });
+        } else {
+          done++;
+          setProgress((prev) =>
+            prev ? { ...prev, done, current: `${data.name} (${data.words} palavras)` } : null
+          );
+        }
+      } catch (e) {
+        failed++;
+        const msg = e instanceof Error ? e.message : String(e);
+        toast.error("Erro de rede", { description: msg });
       }
-      toast.success(msg, {
-        description:
-          "Pode acompanhar o progresso atualizando esta página (F5) ou aguarde ~5min.",
-      });
-      // Atualiza a página a cada 30s pra mostrar progresso
-      const id = window.setInterval(() => router.refresh(), 30_000);
-      window.setTimeout(() => window.clearInterval(id), 10 * 60_000);
-    } finally {
-      setLoading(false);
+
+      // Respira pra nao bater no rate limit
+      if (i < limit - 1) {
+        await new Promise((r) => setTimeout(r, DELAY_BETWEEN_CALLS_MS));
+      }
     }
+
+    setProgress((prev) =>
+      prev ? { ...prev, running: false, done, failed } : null
+    );
+
+    toast.success(`Concluido! ${done} gerados, ${failed} falhas`);
+    router.refresh();
+  }
+
+  function abort() {
+    setProgress((prev) => (prev ? { ...prev, abort: true } : null));
+    toast.info("Parando geração...");
+  }
+
+  if (progress?.running) {
+    const pct = progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-3 rounded-md border border-primary/30 bg-primary/5 p-3">
+          <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold">
+              Gerando {progress.mode === "pending" ? "pendentes" : "todos"} ({progress.done}/{progress.total})
+            </p>
+            <p className="truncate text-xs text-muted-foreground">
+              {progress.current ?? "iniciando..."}
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={abort}>
+            <XCircle className="h-4 w-4" />
+            Parar
+          </Button>
+        </div>
+        <div className="h-2 overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full bg-gradient-to-r from-primary to-accent transition-all"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="flex flex-wrap gap-2">
       <Button
-        onClick={() =>
-          trigger(
-            { mode: "pending" },
-            `Iniciada geração de ${pending} pendentes em background.`
-          )
-        }
-        disabled={loading || pending === 0}
+        onClick={() => runLoop("pending", pending)}
+        disabled={pending === 0}
       >
-        {loading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Sparkles className="h-4 w-4" />
-        )}
+        <Sparkles className="h-4 w-4" />
         Gerar {pending} pendentes
       </Button>
 
       <Button
         variant="outline"
-        onClick={() =>
-          trigger(
-            { mode: "pending", limit: 5 },
-            "Iniciada geração de 5 pendentes (teste rápido)."
-          )
-        }
-        disabled={loading || pending === 0}
+        onClick={() => runLoop("pending", 5)}
+        disabled={pending === 0}
       >
         Gerar 5 (teste)
       </Button>
@@ -80,17 +158,13 @@ export function SeoGenerateButtons({ pending, total }: Props) {
           if (
             !confirm(
               `Regerar TODOS os ${total} fetiches? Vai sobrescrever conteúdo existente e demorar ~${Math.ceil(
-                total / 30
+                (total * 7.5) / 60
               )} min.`
             )
           )
             return;
-          trigger(
-            { mode: "all", force: true },
-            `Iniciada regeneração de todos os ${total} fetiches.`
-          );
+          runLoop("all", total);
         }}
-        disabled={loading}
       >
         <RefreshCw className="h-4 w-4" />
         Regerar todos
