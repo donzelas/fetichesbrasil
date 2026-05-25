@@ -10,8 +10,8 @@ import {
   CollectionPageJsonLd,
 } from "@/components/seo/JsonLd";
 
-export const revalidate = 86400;
-export const dynamicParams = true;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://fetichesbrasil.com.br";
 
@@ -33,22 +33,21 @@ interface CategoryData {
 }
 
 async function getCategory(slug: string): Promise<CategoryData | null> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("categories")
-    .select("id, name, slug, emoji, fetishes(id, name, slug, description)")
-    .eq("slug", slug)
-    .single();
-  return data as CategoryData | null;
-}
-
-export async function generateStaticParams() {
   try {
     const supabase = await createClient();
-    const { data } = await supabase.from("categories").select("slug");
-    return (data ?? []).map((c) => ({ slug: c.slug as string }));
-  } catch {
-    return [];
+    const { data, error } = await supabase
+      .from("categories")
+      .select("id, name, slug, emoji, fetishes(id, name, slug, description)")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (error) {
+      console.error("[categorias/slug] erro Supabase:", error.message);
+      return null;
+    }
+    return data as CategoryData | null;
+  } catch (e) {
+    console.error("[categorias/slug] erro inesperado:", e);
+    return null;
   }
 }
 

@@ -11,8 +11,8 @@ import {
   FAQPageJsonLd,
 } from "@/components/seo/JsonLd";
 
-export const revalidate = 86400; // 1 dia
-export const dynamicParams = true;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://fetichesbrasil.com.br";
 
@@ -64,16 +64,6 @@ async function getRelacionadas(categoryId: string | null, excludeSlug: string) {
       .order("sort_order")
       .limit(8);
     return (data ?? []) as Array<{ name: string; slug: string }>;
-  } catch {
-    return [];
-  }
-}
-
-export async function generateStaticParams() {
-  try {
-    const supabase = await createClient();
-    const { data } = await supabase.from("fetishes").select("slug");
-    return (data ?? []).map((f) => ({ slug: f.slug as string }));
   } catch {
     return [];
   }
