@@ -15,14 +15,40 @@ export default async function HomePage() {
   const viewer = await getViewer();
 
   if (!viewer.isAuthenticated) {
-    const [{ data: rpcOnline }, { data: rpcRooms }] = await Promise.all([
-      supabase.rpc("global_online_users"),
-      supabase.rpc("global_active_rooms"),
-    ]);
+    const [{ data: rpcOnline }, { data: rpcRooms }, { data: categoriesRaw }] =
+      await Promise.all([
+        supabase.rpc("global_online_users"),
+        supabase.rpc("global_active_rooms"),
+        supabase
+          .from("categories")
+          .select("id, name, slug, emoji, fetishes(name, slug, sort_order)")
+          .order("sort_order"),
+      ]);
+
+    type RawCat = {
+      id: string;
+      name: string;
+      slug: string;
+      emoji: string | null;
+      fetishes: Array<{ name: string; slug: string; sort_order: number }>;
+    };
+    const categories = (categoriesRaw as RawCat[] | null ?? []).map((c) => ({
+      id: c.id,
+      name: c.name,
+      slug: c.slug,
+      emoji: c.emoji,
+      fetishCount: c.fetishes.length,
+      topFetishes: [...c.fetishes]
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .slice(0, 3)
+        .map((f) => ({ name: f.name, slug: f.slug })),
+    }));
+
     return (
       <LandingPage
         onlineUsers={typeof rpcOnline === "number" ? rpcOnline : 0}
         activeRooms={typeof rpcRooms === "number" ? rpcRooms : 0}
+        categories={categories}
       />
     );
   }

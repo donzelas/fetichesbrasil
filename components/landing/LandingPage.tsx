@@ -13,12 +13,22 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+export interface LandingCategoryData {
+  id: string;
+  name: string;
+  slug: string;
+  emoji: string | null;
+  fetishCount: number;
+  topFetishes: Array<{ name: string; slug: string }>;
+}
+
 interface LandingPageProps {
   onlineUsers: number;
   activeRooms: number;
+  categories?: LandingCategoryData[];
 }
 
-export function LandingPage({ onlineUsers, activeRooms }: LandingPageProps) {
+export function LandingPage({ onlineUsers, activeRooms, categories = [] }: LandingPageProps) {
   return (
     <div className="relative overflow-hidden">
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
@@ -194,6 +204,67 @@ export function LandingPage({ onlineUsers, activeRooms }: LandingPageProps) {
           conectando aqui dentro.
         </p>
       </section>
+
+      {categories.length > 0 && (
+        <section className="container py-16">
+          <div className="mx-auto max-w-5xl">
+            <div className="mb-8 text-center">
+              <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+                Explore por categoria
+              </h2>
+              <p className="mt-3 text-sm text-muted-foreground md:text-base">
+                100+ preferências catalogadas em {categories.length} categorias com guia
+                educativo entre adultos consensuais brasileiros.{" "}
+                <Link href="/fetiches" className="text-primary hover:underline">
+                  Ver lista completa
+                </Link>
+                .
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              {categories.map((cat) => (
+                <Link
+                  key={cat.id}
+                  href={`/categorias/${cat.slug}`}
+                  className="group relative overflow-hidden rounded-xl border border-border/50 bg-card/50 p-4 backdrop-blur transition hover:border-primary/40 hover:bg-card/70"
+                >
+                  <div className="mb-2 text-2xl">{cat.emoji ?? ""}</div>
+                  <h3 className="font-semibold leading-tight group-hover:text-primary">
+                    {cat.name}
+                  </h3>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {cat.fetishCount} preferências
+                  </p>
+                  {cat.topFetishes.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {cat.topFetishes.slice(0, 3).map((f) => (
+                        <span
+                          key={f.slug}
+                          className="rounded-full bg-background/60 px-2 py-0.5 text-[10px] text-muted-foreground"
+                        >
+                          {f.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </Link>
+              ))}
+            </div>
+
+            <div className="mt-6 text-center">
+              <Link
+                href="/fetiches"
+                className="inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-5 py-2 text-sm font-medium text-accent transition hover:border-accent/70 hover:bg-accent/20"
+              >
+                <Sparkles className="h-4 w-4" />
+                Ver lista completa de fetiches
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="container py-20">
         <div className="relative mx-auto max-w-3xl overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/15 via-card to-card p-10 text-center md:p-16">

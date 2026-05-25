@@ -41,6 +41,7 @@ export function Footer() {
 
           <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
             <Link href="/" className={linkCls}>Home</Link>
+            <Link href="/fetiches" className={linkCls}>Fetiches</Link>
             <Link href="/chat" className={linkCls}>Chat</Link>
             <Link href="/blog" className={linkCls}>Blog</Link>
             {isPremium ? (
