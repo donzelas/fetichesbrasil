@@ -46,6 +46,11 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
+  verification: {
+    other: {
+      "msvalidate.01": "E0E20937AC1034A27A5F55F6818573D6",
+    },
+  },
   alternates: {
     canonical: "/",
     languages: { "pt-BR": "/" },
