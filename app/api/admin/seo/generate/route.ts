@@ -21,21 +21,30 @@ import { generateFetishSeoContent } from "@/lib/seo/generate-fetish-content";
 export const maxDuration = 60;
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Nao autenticado" }, { status: 401 });
-  }
+  // 2 formas de auth:
+  // 1. Cookie de admin logado (uso pelo painel /admin/seo)
+  // 2. Header X-Admin-Token (uso por GitHub Action / cron / scripts externos)
+  const adminToken = request.headers.get("x-admin-token");
+  const expectedToken = process.env.ADMIN_API_TOKEN;
+  const tokenAuth = adminToken && expectedToken && adminToken === expectedToken;
 
-  const { data: me } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .single();
-  if (!me?.is_admin) {
-    return NextResponse.json({ error: "Sem permissao" }, { status: 403 });
+  if (!tokenAuth) {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Nao autenticado" }, { status: 401 });
+    }
+
+    const { data: me } = await supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", user.id)
+      .single();
+    if (!me?.is_admin) {
+      return NextResponse.json({ error: "Sem permissao" }, { status: 403 });
+    }
   }
 
   const body = (await request.json().catch(() => ({}))) as {
