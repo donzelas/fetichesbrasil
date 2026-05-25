@@ -2,10 +2,12 @@ import Link from "next/link";
 import {
   Activity,
   Crown,
+  FileText,
   Flame,
   Image as ImageIcon,
   MessageCircle,
   MessageSquare,
+  Music2,
   Newspaper,
   Radio,
   Tag,
@@ -35,6 +37,10 @@ export default async function AdminHomePage() {
     { count: totalRoomImages },
     { count: liveRoomMessages },
     { count: liveDmMessages },
+    { count: pendingTiktok },
+    { count: postedTiktok },
+    { count: totalFetishes },
+    { count: fetishesWithSeo },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -88,6 +94,19 @@ export default async function AdminHomePage() {
       .from("dm_messages")
       .select("*", { count: "exact", head: true })
       .gte("created_at", tenMinutesAgo),
+    supabase
+      .from("tiktok_scripts")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "pending_approval"),
+    supabase
+      .from("tiktok_scripts")
+      .select("*", { count: "exact", head: true })
+      .in("status", ["posted", "posted_inbox"]),
+    supabase.from("fetishes").select("*", { count: "exact", head: true }),
+    supabase
+      .from("fetishes")
+      .select("*", { count: "exact", head: true })
+      .not("seo_content", "is", null),
   ]);
 
   const liveTotal = (liveRoomMessages ?? 0) + (liveDmMessages ?? 0);
@@ -177,6 +196,31 @@ export default async function AdminHomePage() {
         },
       ],
     },
+    {
+      title: "Tráfego & Crescimento",
+      items: [
+        {
+          href: "/admin/tiktok",
+          title: "TikTok IA",
+          desc: `${postedTiktok ?? 0} publicado(s) · roteiros gerados por IA, aprovação manual.`,
+          badge:
+            (pendingTiktok ?? 0) > 0
+              ? { count: pendingTiktok ?? 0, tone: "amber" }
+              : undefined,
+          icon: Music2,
+        },
+        {
+          href: "/admin/seo",
+          title: "SEO IA",
+          desc: `${fetishesWithSeo ?? 0}/${totalFetishes ?? 0} fetiches com conteúdo único · artigos de 1000+ palavras pro Google.`,
+          badge:
+            (totalFetishes ?? 0) - (fetishesWithSeo ?? 0) > 0
+              ? { count: (totalFetishes ?? 0) - (fetishesWithSeo ?? 0), tone: "amber" }
+              : undefined,
+          icon: FileText,
+        },
+      ],
+    },
   ];
 
   const stats = [
@@ -195,6 +239,13 @@ export default async function AdminHomePage() {
     { label: "Chats individuais", value: totalDmThreads ?? 0, icon: MessageCircle },
     { label: "Imagens em salas", value: totalRoomImages ?? 0, icon: ImageIcon },
     { label: "Cards destaque", value: totalFeaturedCards ?? 0, icon: ImageIcon },
+    {
+      label: "TikTok pendentes",
+      value: pendingTiktok ?? 0,
+      icon: Music2,
+      highlight: (pendingTiktok ?? 0) > 0,
+    },
+    { label: "TikTok publicados", value: postedTiktok ?? 0, icon: Music2 },
   ];
 
   return (

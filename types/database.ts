@@ -6,6 +6,13 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
+export interface SeoFetishContent {
+  intro: string;
+  sections: Array<{ title: string; body: string }>;
+  faqs: Array<{ q: string; a: string }>;
+  internal_links_hint?: string[];
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -100,6 +107,14 @@ export interface Database {
           slug: string;
           description: string | null;
           sort_order: number;
+          used_in_tiktok_at: string | null;
+          seo_title: string | null;
+          seo_description: string | null;
+          seo_keywords: string[] | null;
+          seo_content: SeoFetishContent | null;
+          seo_generated_at: string | null;
+          seo_llm_provider: string | null;
+          seo_llm_model: string | null;
           created_at: string;
         };
         Insert: {
@@ -109,6 +124,14 @@ export interface Database {
           slug: string;
           description?: string | null;
           sort_order?: number;
+          used_in_tiktok_at?: string | null;
+          seo_title?: string | null;
+          seo_description?: string | null;
+          seo_keywords?: string[] | null;
+          seo_content?: SeoFetishContent | null;
+          seo_generated_at?: string | null;
+          seo_llm_provider?: string | null;
+          seo_llm_model?: string | null;
           created_at?: string;
         };
         Update: {
@@ -118,6 +141,14 @@ export interface Database {
           slug?: string;
           description?: string | null;
           sort_order?: number;
+          used_in_tiktok_at?: string | null;
+          seo_title?: string | null;
+          seo_description?: string | null;
+          seo_keywords?: string[] | null;
+          seo_content?: SeoFetishContent | null;
+          seo_generated_at?: string | null;
+          seo_llm_provider?: string | null;
+          seo_llm_model?: string | null;
           created_at?: string;
         };
         Relationships: [
@@ -528,6 +559,153 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["blog_post_reports"]["Insert"]>;
         Relationships: [];
       };
+      tiktok_scripts: {
+        Row: {
+          id: string;
+          fetiche_id: string | null;
+          titulo: string;
+          hook: string;
+          corpo: string;
+          cta: string;
+          hashtags: string[];
+          broll_tags: string[];
+          voz: string;
+          llm_provider: string | null;
+          llm_model: string | null;
+          audio_path: string | null;
+          srt_path: string | null;
+          broll_paths: string[] | null;
+          video_path: string | null;
+          status:
+            | "pending_approval"
+            | "approved"
+            | "rejected"
+            | "processing"
+            | "audio_done"
+            | "broll_done"
+            | "srt_done"
+            | "ready_to_post"
+            | "posted_inbox"
+            | "posted"
+            | "failed";
+          rejection_reason: string | null;
+          failure_reason: string | null;
+          approved_by: string | null;
+          approved_at: string | null;
+          tiktok_publish_id: string | null;
+          tiktok_video_id: string | null;
+          tiktok_share_url: string | null;
+          posted_at: string | null;
+          video_config: Record<string, unknown> | null;
+          progress_message: string | null;
+          progress_started_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          fetiche_id?: string | null;
+          titulo: string;
+          hook: string;
+          corpo: string;
+          cta: string;
+          hashtags?: string[];
+          broll_tags?: string[];
+          voz?: string;
+          llm_provider?: string | null;
+          llm_model?: string | null;
+          audio_path?: string | null;
+          srt_path?: string | null;
+          broll_paths?: string[] | null;
+          video_path?: string | null;
+          status?:
+            | "pending_approval"
+            | "approved"
+            | "rejected"
+            | "processing"
+            | "audio_done"
+            | "broll_done"
+            | "srt_done"
+            | "ready_to_post"
+            | "posted_inbox"
+            | "posted"
+            | "failed";
+          rejection_reason?: string | null;
+          failure_reason?: string | null;
+          approved_by?: string | null;
+          approved_at?: string | null;
+          tiktok_publish_id?: string | null;
+          tiktok_video_id?: string | null;
+          tiktok_share_url?: string | null;
+          posted_at?: string | null;
+          video_config?: Record<string, unknown> | null;
+          progress_message?: string | null;
+          progress_started_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["tiktok_scripts"]["Insert"]>;
+        Relationships: [];
+      };
+      tiktok_metrics: {
+        Row: {
+          id: string;
+          script_id: string;
+          views: number;
+          likes: number;
+          comments: number;
+          shares: number;
+          watch_time_avg: number;
+          fyp_views_pct: number;
+          collected_at: string;
+        };
+        Insert: {
+          id?: string;
+          script_id: string;
+          views?: number;
+          likes?: number;
+          comments?: number;
+          shares?: number;
+          watch_time_avg?: number;
+          fyp_views_pct?: number;
+          collected_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["tiktok_metrics"]["Insert"]>;
+        Relationships: [];
+      };
+      tiktok_settings: {
+        Row: {
+          id: boolean;
+          font_name: string;
+          font_size: number;
+          font_bold: boolean;
+          font_color: string;
+          outline_color: string;
+          outline_width: number;
+          shadow: number;
+          alignment: number;
+          margin_v: number;
+          margin_l: number;
+          margin_r: number;
+          uppercase: boolean;
+          words_per_chunk: number;
+          default_voz: string;
+          default_voz_rate: string;
+          default_llm: string;
+          default_llm_model: string;
+          video_width: number;
+          video_height: number;
+          video_fps: number;
+          video_crf: number;
+          cron_enabled: boolean;
+          cron_hours: number[];
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: Partial<Database["public"]["Tables"]["tiktok_settings"]["Row"]>;
+        Update: Partial<Database["public"]["Tables"]["tiktok_settings"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -575,6 +753,31 @@ export interface Database {
       global_online_users: { Args: Record<PropertyKey, never>; Returns: number };
       global_active_rooms: { Args: Record<PropertyKey, never>; Returns: number };
       blog_posts_today: { Args: Record<PropertyKey, never>; Returns: number };
+      approve_tiktok_script: { Args: { p_script_id: string }; Returns: undefined };
+      reject_tiktok_script: {
+        Args: { p_script_id: string; p_reason: string };
+        Returns: undefined;
+      };
+      retry_tiktok_script: { Args: { p_script_id: string }; Returns: undefined };
+      delete_tiktok_script: { Args: { p_script_id: string }; Returns: undefined };
+      update_tiktok_script: {
+        Args: {
+          p_script_id: string;
+          p_titulo: string;
+          p_hook: string;
+          p_corpo: string;
+          p_cta: string;
+          p_hashtags: string[];
+          p_broll_tags: string[];
+          p_voz: string;
+          p_video_config?: Record<string, unknown> | null;
+        };
+        Returns: undefined;
+      };
+      update_tiktok_settings: {
+        Args: { p_data: Record<string, unknown> };
+        Returns: undefined;
+      };
     };
     Enums: {
       [_ in never]: never;
@@ -616,3 +819,7 @@ export type BlogPostWithAuthor = BlogPost & {
 export type CategoryWithFetishes = Category & {
   fetishes: Fetish[];
 };
+
+export type TiktokScript = Tables<"tiktok_scripts">;
+export type TiktokMetric = Tables<"tiktok_metrics">;
+export type TiktokSettings = Tables<"tiktok_settings">;

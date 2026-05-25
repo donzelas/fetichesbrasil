@@ -20,6 +20,13 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
+interface SeoContent {
+  intro: string;
+  sections: Array<{ title: string; body: string }>;
+  faqs: Array<{ q: string; a: string }>;
+  internal_links_hint?: string[];
+}
+
 interface FetishData {
   id: string;
   name: string;
@@ -31,6 +38,10 @@ interface FetishData {
     slug: string;
     emoji: string | null;
   } | null;
+  seo_title: string | null;
+  seo_description: string | null;
+  seo_keywords: string[] | null;
+  seo_content: SeoContent | null;
 }
 
 async function getFetish(slug: string): Promise<FetishData | null> {
@@ -38,7 +49,9 @@ async function getFetish(slug: string): Promise<FetishData | null> {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("fetishes")
-      .select("id, name, slug, description, category_id, category:categories(name, slug, emoji)")
+      .select(
+        "id, name, slug, description, category_id, category:categories(name, slug, emoji), seo_title, seo_description, seo_keywords, seo_content"
+      )
       .eq("slug", slug)
       .maybeSingle();
     if (error) {
@@ -74,20 +87,29 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const fetish = await getFetish(slug);
   if (!fetish) return {};
 
-  const title = `${fetish.name}: o que é, como começar e comunidade brasileira`;
-  const description = `Tudo sobre ${fetish.name.toLowerCase()} entre adultos consensuais no Brasil. Significado, dicas de segurança, mitos e onde conhecer outras pessoas com a mesma preferência.`;
+  // Prefere SEO content gerado pela IA, fallback pro template
+  const title =
+    fetish.seo_title ||
+    `${fetish.name}: o que é, como começar e comunidade brasileira`;
+  const description =
+    fetish.seo_description ||
+    `Tudo sobre ${fetish.name.toLowerCase()} entre adultos consensuais no Brasil. Significado, dicas de segurança, mitos e onde conhecer outras pessoas com a mesma preferência.`;
+  const keywords =
+    fetish.seo_keywords?.length
+      ? fetish.seo_keywords
+      : [
+          fetish.name.toLowerCase(),
+          `o que é ${fetish.name.toLowerCase()}`,
+          `${fetish.name.toLowerCase()} brasil`,
+          `${fetish.name.toLowerCase()} significado`,
+          `comunidade ${fetish.name.toLowerCase()}`,
+          `lifestyle ${fetish.name.toLowerCase()}`,
+        ];
 
   return {
     title,
     description,
-    keywords: [
-      fetish.name.toLowerCase(),
-      `o que é ${fetish.name.toLowerCase()}`,
-      `${fetish.name.toLowerCase()} brasil`,
-      `${fetish.name.toLowerCase()} significado`,
-      `comunidade ${fetish.name.toLowerCase()}`,
-      `lifestyle ${fetish.name.toLowerCase()}`,
-    ],
+    keywords,
     alternates: { canonical: `/fetiches/${slug}` },
     openGraph: {
       title,
@@ -113,29 +135,35 @@ export default async function FetishPage({ params }: PageProps) {
   const fetishName = fetish.name;
   const categoryName = fetish.category?.name ?? "Lifestyle";
 
-  // Conteudo editorial gerado pra cada fetiche (defaults educacionais)
-  const faqs = [
-    {
-      question: `O que é ${fetishName.toLowerCase()}?`,
-      answer: `${fetishName} é uma preferência íntima dentro da categoria ${categoryName} comum entre adultos consensuais. Praticada com comunicação clara e respeito mútuo, é uma forma legítima de explorar a sexualidade entre pessoas maiores de 18 anos.`,
-    },
-    {
-      question: `${fetishName} é normal?`,
-      answer: `Sim. Pesquisas de comportamento sexual mostram que preferências específicas como ${fetishName.toLowerCase()} são bastante comuns. O importante é a prática ser consensual, entre adultos e segura.`,
-    },
-    {
-      question: `Como conversar sobre ${fetishName.toLowerCase()} com o parceiro?`,
-      answer: `Comunicação aberta é a base. Escolha um momento neutro (não durante intimidade), explique o que te atrai, pergunte como o parceiro se sente e respeite limites. Você não precisa fazer tudo já no primeiro dia — comece com pequenos passos.`,
-    },
-    {
-      question: `Onde conhecer outras pessoas com essa mesma preferência no Brasil?`,
-      answer: `Plataformas brasileiras voltadas pra adultos consensuais, como Fetiches Brasil, têm salas temáticas e comunidades específicas onde você pode conversar sem julgamento com pessoas que compartilham os mesmos interesses.`,
-    },
-    {
-      question: `É seguro praticar ${fetishName.toLowerCase()}?`,
-      answer: `Sim, quando há consentimento explícito, comunicação prévia sobre limites, palavra de segurança quando aplicável e respeito mútuo. Use o princípio SSC (são, seguro e consensual) ou RACK (risco assumido, consciente e ético).`,
-    },
-  ];
+  // Conteudo SEO unico (gerado por IA) OU template default
+  const usingAiContent = !!fetish.seo_content;
+  const faqs = usingAiContent
+    ? (fetish.seo_content?.faqs ?? []).map((f) => ({
+        question: f.q,
+        answer: f.a,
+      }))
+    : [
+        {
+          question: `O que é ${fetishName.toLowerCase()}?`,
+          answer: `${fetishName} é uma preferência íntima dentro da categoria ${categoryName} comum entre adultos consensuais. Praticada com comunicação clara e respeito mútuo, é uma forma legítima de explorar a sexualidade entre pessoas maiores de 18 anos.`,
+        },
+        {
+          question: `${fetishName} é normal?`,
+          answer: `Sim. Pesquisas de comportamento sexual mostram que preferências específicas como ${fetishName.toLowerCase()} são bastante comuns. O importante é a prática ser consensual, entre adultos e segura.`,
+        },
+        {
+          question: `Como conversar sobre ${fetishName.toLowerCase()} com o parceiro?`,
+          answer: `Comunicação aberta é a base. Escolha um momento neutro (não durante intimidade), explique o que te atrai, pergunte como o parceiro se sente e respeite limites. Você não precisa fazer tudo já no primeiro dia — comece com pequenos passos.`,
+        },
+        {
+          question: `Onde conhecer outras pessoas com essa mesma preferência no Brasil?`,
+          answer: `Plataformas brasileiras voltadas pra adultos consensuais, como Fetiches Brasil, têm salas temáticas e comunidades específicas onde você pode conversar sem julgamento com pessoas que compartilham os mesmos interesses.`,
+        },
+        {
+          question: `É seguro praticar ${fetishName.toLowerCase()}?`,
+          answer: `Sim, quando há consentimento explícito, comunicação prévia sobre limites, palavra de segurança quando aplicável e respeito mútuo. Use o princípio SSC (são, seguro e consensual) ou RACK (risco assumido, consciente e ético).`,
+        },
+      ];
 
   return (
     <div className="container max-w-3xl space-y-8 py-8">
@@ -183,108 +211,82 @@ export default async function FetishPage({ params }: PageProps) {
       </header>
 
       <article className="prose prose-invert max-w-none space-y-6 text-sm leading-relaxed text-muted-foreground">
-        <section className="space-y-3">
-          <h2 className="text-2xl font-semibold text-foreground">
-            O que é {fetishName.toLowerCase()}?
-          </h2>
-          <p>
-            <strong>{fetishName}</strong> é uma preferência íntima inserida na categoria{" "}
-            <strong>{categoryName}</strong>, praticada entre adultos consensuais maiores
-            de 18 anos. Pode ser explorada em diferentes intensidades, desde uma fantasia
-            ocasional até uma dinâmica regular dentro do relacionamento.
-          </p>
-          {fetish.description && <p>{fetish.description}</p>}
-          <p>
-            Como qualquer prática íntima entre adultos, o essencial é{" "}
-            <strong>consentimento mútuo, comunicação clara e respeito aos limites</strong>{" "}
-            de cada pessoa envolvida.
-          </p>
-        </section>
+        {usingAiContent && fetish.seo_content ? (
+          <>
+            {/* Intro (gerada por IA) */}
+            <section className="space-y-3">
+              {fetish.seo_content.intro.split(/\n\n+/).map((p, i) => (
+                <p key={i}>{p.trim()}</p>
+              ))}
+            </section>
 
-        <section className="space-y-3">
-          <h2 className="text-2xl font-semibold text-foreground">
-            É comum no Brasil?
-          </h2>
-          <p>
-            Pesquisas brasileiras de comportamento sexual mostram que preferências
-            específicas como {fetishName.toLowerCase()} são consideravelmente mais comuns
-            do que a maioria das pessoas imagina. O tabu cultural faz parecer raro, mas
-            comunidades online brasileiras voltadas pra adultos crescem ano após ano,
-            evidenciando que há milhares de pessoas com esse mesmo interesse no país.
-          </p>
-        </section>
+            {/* Sections geradas por IA */}
+            {fetish.seo_content.sections.map((s, idx) => (
+              <section key={idx} className="space-y-3">
+                <h2 className="text-2xl font-semibold text-foreground">
+                  {s.title}
+                </h2>
+                {s.body.split(/\n\n+/).map((p, j) => (
+                  <p key={j}>{p.trim()}</p>
+                ))}
+              </section>
+            ))}
+          </>
+        ) : (
+          <>
+            <section className="space-y-3">
+              <h2 className="text-2xl font-semibold text-foreground">
+                O que é {fetishName.toLowerCase()}?
+              </h2>
+              <p>
+                <strong>{fetishName}</strong> é uma preferência íntima inserida na categoria{" "}
+                <strong>{categoryName}</strong>, praticada entre adultos consensuais maiores
+                de 18 anos. Pode ser explorada em diferentes intensidades, desde uma fantasia
+                ocasional até uma dinâmica regular dentro do relacionamento.
+              </p>
+              {fetish.description && <p>{fetish.description}</p>}
+              <p>
+                Como qualquer prática íntima entre adultos, o essencial é{" "}
+                <strong>consentimento mútuo, comunicação clara e respeito aos limites</strong>{" "}
+                de cada pessoa envolvida.
+              </p>
+            </section>
+            <section className="space-y-3">
+              <h2 className="text-2xl font-semibold text-foreground">
+                Como começar com segurança
+              </h2>
+              <ul className="ml-5 list-disc space-y-2">
+                <li>
+                  <strong>Comunique antes</strong>: nunca surpreenda um parceiro com algo
+                  novo durante o momento íntimo.
+                </li>
+                <li>
+                  <strong>Defina limites claros</strong>: use uma escala simples como
+                  "verde, amarelo, vermelho".
+                </li>
+                <li>
+                  <strong>Palavra de segurança</strong>: combine uma palavra que significa
+                  "parar imediatamente, sem discussão".
+                </li>
+                <li>
+                  <strong>Comece devagar</strong>: pequenos passos com check-in entre cada
+                  um criam confiança.
+                </li>
+                <li>
+                  <strong>Aftercare</strong>: depois de práticas mais intensas, dedique
+                  tempo ao cuidado mútuo.
+                </li>
+              </ul>
+            </section>
+          </>
+        )}
 
-        <section className="space-y-3">
-          <h2 className="text-2xl font-semibold text-foreground">
-            Como começar com segurança
-          </h2>
-          <ul className="ml-5 list-disc space-y-2">
-            <li>
-              <strong>Comunique antes</strong>: nunca surpreenda um parceiro com algo novo
-              durante o momento íntimo — converse em um contexto neutro, sem pressão.
-            </li>
-            <li>
-              <strong>Defina limites claros</strong>: o que está dentro e fora pra cada
-              um? Use uma escala simples como "verde, amarelo, vermelho".
-            </li>
-            <li>
-              <strong>Palavra de segurança</strong>: combine uma palavra ou sinal que
-              significa "parar imediatamente, sem discussão".
-            </li>
-            <li>
-              <strong>Comece devagar</strong>: você não precisa fazer tudo no primeiro
-              dia. Pequenos passos, com check-in entre cada um, criam confiança.
-            </li>
-            <li>
-              <strong>Aftercare</strong>: depois de práticas mais intensas, dedique tempo
-              ao cuidado mútuo — conversa, água, abraço. É parte essencial.
-            </li>
-          </ul>
-        </section>
-
-        <section className="space-y-3">
-          <h2 className="text-2xl font-semibold text-foreground">
-            Mitos comuns sobre {fetishName.toLowerCase()}
-          </h2>
-          <ul className="ml-5 list-disc space-y-2">
-            <li>
-              <strong>"Quem gosta tem trauma"</strong>: falso. Preferências íntimas não
-              são sintoma de trauma. Adultos saudáveis exploram fantasias diversas.
-            </li>
-            <li>
-              <strong>"É perigoso"</strong>: praticado com consentimento e comunicação,
-              é tão seguro quanto qualquer outra intimidade entre adultos.
-            </li>
-            <li>
-              <strong>"É raro"</strong>: muito mais comum que a cultura faz parecer.
-              Milhares de brasileiros têm essa preferência.
-            </li>
-          </ul>
-        </section>
-
-        <section className="space-y-3">
-          <h2 className="text-2xl font-semibold text-foreground">
-            Onde conhecer pessoas com essa mesma preferência
-          </h2>
-          <p>
-            A forma mais segura é em comunidades brasileiras dedicadas a adultos
-            consensuais, onde existem <strong>salas temáticas específicas</strong> pra
-            cada preferência. Assim você conversa com pessoas que entendem do assunto e
-            não te julgam, sem precisar explicar o básico em cada conversa nova.
-          </p>
-          <p>
-            O Fetiches Brasil tem salas dedicadas a <strong>{fetishName}</strong> e
-            outras preferências da categoria <strong>{categoryName}</strong>. Cadastro
-            gratuito, idade verificada, regras claras de consentimento.
-          </p>
-        </section>
-
-        <section className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-5">
+        <section className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-5 not-prose">
           <h2 className="text-xl font-semibold text-foreground">
             Entre na comunidade brasileira
           </h2>
-          <p>
-            Cadastro gratuito. Mais de 94 preferências catalogadas. Chat em tempo real
+          <p className="text-sm text-muted-foreground">
+            Cadastro gratuito. Mais de 100 preferências catalogadas. Chat em tempo real
             com gente real do Brasil. Exclusivo +18.
           </p>
           <div className="flex gap-2 pt-2">
@@ -311,12 +313,12 @@ export default async function FetishPage({ params }: PageProps) {
             {faqs.map((faq) => (
               <details
                 key={faq.question}
-                className="group rounded-lg border border-border/50 bg-card/40 p-4"
+                className="group rounded-lg border border-border/50 bg-card/40 p-4 not-prose"
               >
                 <summary className="cursor-pointer text-sm font-semibold text-foreground">
                   {faq.question}
                 </summary>
-                <p className="mt-3 text-sm">{faq.answer}</p>
+                <p className="mt-3 text-sm text-muted-foreground">{faq.answer}</p>
               </details>
             ))}
           </div>
