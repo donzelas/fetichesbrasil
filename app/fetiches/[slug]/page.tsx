@@ -25,6 +25,7 @@ interface FetishData {
   name: string;
   slug: string;
   description: string | null;
+  category_id: string | null;
   category: {
     name: string;
     slug: string;
@@ -33,13 +34,39 @@ interface FetishData {
 }
 
 async function getFetish(slug: string): Promise<FetishData | null> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("fetishes")
-    .select("id, name, slug, description, category:categories(name, slug, emoji)")
-    .eq("slug", slug)
-    .single();
-  return data as FetishData | null;
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("fetishes")
+      .select("id, name, slug, description, category_id, category:categories(name, slug, emoji)")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (error) {
+      console.error("[fetiches/slug] erro Supabase:", error.message);
+      return null;
+    }
+    return data as FetishData | null;
+  } catch (e) {
+    console.error("[fetiches/slug] erro inesperado:", e);
+    return null;
+  }
+}
+
+async function getRelacionadas(categoryId: string | null, excludeSlug: string) {
+  if (!categoryId) return [];
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("fetishes")
+      .select("name, slug")
+      .eq("category_id", categoryId)
+      .neq("slug", excludeSlug)
+      .order("sort_order")
+      .limit(8);
+    return (data ?? []) as Array<{ name: string; slug: string }>;
+  } catch {
+    return [];
+  }
 }
 
 export async function generateStaticParams() {
@@ -90,15 +117,7 @@ export default async function FetishPage({ params }: PageProps) {
   if (!fetish) notFound();
 
   // Busca outras fetiches da mesma categoria (internal linking)
-  const supabase = await createClient();
-  const { data: relacionadasRaw } = await supabase
-    .from("fetishes")
-    .select("name, slug, category:categories!inner(slug)")
-    .eq("category.slug", fetish.category?.slug ?? "")
-    .neq("slug", slug)
-    .limit(8);
-  const relacionadas =
-    (relacionadasRaw as Array<{ name: string; slug: string }>) ?? [];
+  const relacionadas = await getRelacionadas(fetish.category_id, slug);
 
   const url = `${SITE_URL}/fetiches/${slug}`;
   const fetishName = fetish.name;
