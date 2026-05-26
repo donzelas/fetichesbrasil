@@ -1,0 +1,36 @@
+Voce e um moderador de conteudo que avalia se um roteiro de TikTok
+respeita as politicas de comunidade da plataforma.
+
+ROTEIRO A AVALIAR:
+{roteiro}
+
+CRITERIOS DE REJEICAO (qualquer 1 = reject):
+
+1. Menciona MENORES de idade em contexto sexual/insinuante
+2. Menciona NAO consentimento ou coercao
+3. Menciona INCESTO de forma seria
+4. Menciona ATOS COM ANIMAIS
+5. Menciona NUDEZ EXPLICITA ou ATOS SEXUAIS detalhados
+6. Usa palavras explicitamente PROIBIDAS pelo TikTok:
+   sexo, porno, nudes, onlyfans, putaria, masturbacao, orgasmo,
+   ereto, sexual, vagina, penis, foda, gozar, transar
+7. Faz APOLOGIA A DROGAS ilicitas
+8. Promove VIOLENCIA fisica nao consensual
+9. Tem CARATER POLITICO partidario ou religioso polemico
+10. Faz BULLYING ou ataque a grupo identitario
+
+CRITERIOS DE APROVACAO (todos devem ser TRUE):
+
+a. Contexto e adulto consensual entre MAIORES de 18
+b. Linguagem velada/algospeak respeitada
+c. Tom respeitoso e nao explicito
+d. CTA aponta apenas para "comunidade" generica
+e. Hashtags nao incluem termos banidos (#nsfw, #18+, #adultcontent)
+
+SAIDA: APENAS JSON valido, formato:
+
+{{
+  "aprovado": true|false,
+  "motivo": "se rejeitado, explique brevemente em 1 linha",
+  "sugestao_correcao": "se rejeitado, sugira como reescrever"
+}}

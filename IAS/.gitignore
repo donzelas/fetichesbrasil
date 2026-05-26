@@ -1,0 +1,46 @@
+# Variaveis sensiveis
+.env
+.env.local
+.env.production
+
+# Dados dos containers
+n8n_data/
+postiz_data/
+postiz_db_data/
+postiz_redis_data/
+uptime_data/
+
+# Arquivos gerados
+output/
+broll_cache/
+logs/
+*.mp3
+*.mp4
+*.wav
+*.srt
+*.m4a
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# SO
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Backups
+backup_*/
+backup_*.zip

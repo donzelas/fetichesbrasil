@@ -1,0 +1,110 @@
+name: fetiches-ias
+
+# =====================================================================
+# Stack IAS - rodada no notebook i5 8GB Windows via Docker Desktop
+# Acesse cada servico via Cloudflare Tunnel (subdominios) ou localhost
+# =====================================================================
+
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: ias-n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=${N8N_DOMAIN}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://${N8N_DOMAIN}/
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+      - TZ=America/Sao_Paulo
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_LOG_LEVEL=info
+      - N8N_DEFAULT_BINARY_DATA_MODE=filesystem
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=168
+    volumes:
+      - ../n8n_data:/home/node/.n8n
+      - ../output:/output
+      - ../broll_cache:/broll_cache
+      - ../scripts:/scripts:ro
+    networks: [ias]
+
+  whisper:
+    image: onerahmet/openai-whisper-asr-webservice:latest-cpu
+    container_name: ias-whisper
+    restart: always
+    ports:
+      - "9000:9000"
+    environment:
+      - ASR_MODEL=small
+      - ASR_ENGINE=faster_whisper
+      - ASR_MODEL_PATH=/data/models
+    volumes:
+      - whisper_models:/data/models
+    networks: [ias]
+
+  postiz-db:
+    image: postgres:16-alpine
+    container_name: ias-postiz-db
+    restart: always
+    environment:
+      - POSTGRES_USER=postiz
+      - POSTGRES_PASSWORD=postiz
+      - POSTGRES_DB=postiz
+    volumes:
+      - ../postiz_db_data:/var/lib/postgresql/data
+    networks: [ias]
+
+  postiz-redis:
+    image: redis:7-alpine
+    container_name: ias-postiz-redis
+    restart: always
+    networks: [ias]
+
+  postiz:
+    image: ghcr.io/gitroomhq/postiz-app:latest
+    container_name: ias-postiz
+    restart: always
+    ports:
+      - "3000:5000"
+    environment:
+      - MAIN_URL=https://${POSTIZ_DOMAIN}
+      - FRONTEND_URL=https://${POSTIZ_DOMAIN}
+      - NEXT_PUBLIC_BACKEND_URL=https://${POSTIZ_DOMAIN}/api
+      - JWT_SECRET=${POSTIZ_JWT_SECRET}
+      - DATABASE_URL=${POSTIZ_DATABASE_URL}
+      - REDIS_URL=${POSTIZ_REDIS_URL}
+      - BACKEND_INTERNAL_URL=http://localhost:3000
+      - IS_GENERAL=true
+      - STORAGE_PROVIDER=local
+      - UPLOAD_DIRECTORY=/uploads
+      - NEXT_PUBLIC_UPLOAD_DIRECTORY=/uploads
+    volumes:
+      - ../postiz_data:/uploads
+    depends_on:
+      - postiz-db
+      - postiz-redis
+    networks: [ias]
+
+  uptime:
+    image: louislam/uptime-kuma:latest
+    container_name: ias-uptime
+    restart: always
+    ports:
+      - "3001:3001"
+    volumes:
+      - ../uptime_data:/app/data
+    networks: [ias]
+
+networks:
+  ias:
+    driver: bridge
+
+volumes:
+  whisper_models:
