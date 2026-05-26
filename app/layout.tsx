@@ -85,6 +85,12 @@ export const metadata: Metadata = {
   appLinks: {
     web: { url: SITE_URL, should_fallback: true },
   },
+  // PWA / Apple Web App
+  appleWebApp: {
+    capable: true,
+    title: "Fetiches BR",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export const viewport: Viewport = {

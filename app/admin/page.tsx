@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
+import { MobileSuggestionBanner } from "@/components/admin/MobileSuggestionBanner";
 
 function brl(cents: number): string {
   return new Intl.NumberFormat("pt-BR", {
@@ -297,7 +298,16 @@ export default async function AdminHomePage() {
           <h1 className="text-3xl font-bold tracking-tight">Painel Admin</h1>
           <p className="text-muted-foreground">Gestão geral da plataforma.</p>
         </div>
+        <Link
+          href="/admin/mobile"
+          className="hidden md:inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/20"
+        >
+          <Activity className="h-3.5 w-3.5" />
+          Versão mobile
+        </Link>
       </div>
+
+      <MobileSuggestionBanner />
 
       {/* ─── HERO: MONITOR AO VIVO ───────────────────────────── */}
       <Link href="/admin/ao-vivo" className="block">
