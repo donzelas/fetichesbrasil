@@ -10,6 +10,7 @@
     "types:gen": "supabase gen types typescript --project-id $SUPABASE_PROJECT_ID --schema public > types/database.ts"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@radix-ui/react-avatar": "^1.1.2",
     "@radix-ui/react-dialog": "^1.1.4",
     "@radix-ui/react-dropdown-menu": "^2.1.4",

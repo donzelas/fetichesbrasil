@@ -1,7 +1,9 @@
 import Groq from "groq-sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { SeoFetishContent } from "@/types/database";
 
 const GROQ_MODEL = "llama-3.3-70b-versatile";
+const GEMINI_MODEL = "gemini-flash-latest";
 
 const PROMPT = `Voce e um redator SEO especialista em educacao sexual adulta
 para o publico brasileiro. Tom EDUCATIVO, INFORMATIVO e PROFISSIONAL -
@@ -83,20 +85,11 @@ export interface GeneratedSeoFetish {
   word_count: number;
 }
 
-export async function generateFetishSeoContent(args: {
-  name: string;
-  slug: string;
-  categoryName: string;
-}): Promise<GeneratedSeoFetish> {
+async function tryGroq(prompt: string): Promise<{ raw: string; provider: string; model: string }> {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) throw new Error("GROQ_API_KEY nao configurada");
 
   const groq = new Groq({ apiKey });
-
-  const prompt = PROMPT.replaceAll("{nome}", args.name)
-    .replaceAll("{categoria}", args.categoryName)
-    .replaceAll("{slug}", args.slug);
-
   const response = await groq.chat.completions.create({
     model: GROQ_MODEL,
     messages: [{ role: "user", content: prompt }],
@@ -107,8 +100,74 @@ export async function generateFetishSeoContent(args: {
 
   const raw = response.choices[0]?.message?.content;
   if (!raw) throw new Error("Groq retornou resposta vazia");
+  return { raw, provider: "groq", model: GROQ_MODEL };
+}
 
-  const data = JSON.parse(raw) as {
+async function tryGemini(prompt: string): Promise<{ raw: string; provider: string; model: string }> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("GEMINI_API_KEY nao configurada");
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({
+    model: GEMINI_MODEL,
+    generationConfig: {
+      temperature: 0.8,
+      maxOutputTokens: 8000,
+      responseMimeType: "application/json",
+    },
+  });
+
+  const result = await model.generateContent(prompt);
+  const raw = result.response.text();
+  if (!raw) throw new Error("Gemini retornou resposta vazia");
+  return { raw, provider: "gemini", model: GEMINI_MODEL };
+}
+
+function isRateLimitOrQuotaError(e: unknown): boolean {
+  if (!e) return false;
+  const msg = (e instanceof Error ? e.message : String(e)).toLowerCase();
+  return (
+    msg.includes("rate limit") ||
+    msg.includes("rate_limit") ||
+    msg.includes("429") ||
+    msg.includes("quota") ||
+    msg.includes("tpd") ||
+    msg.includes("tokens per day") ||
+    msg.includes("too many requests")
+  );
+}
+
+export async function generateFetishSeoContent(args: {
+  name: string;
+  slug: string;
+  categoryName: string;
+}): Promise<GeneratedSeoFetish> {
+  const prompt = PROMPT.replaceAll("{nome}", args.name)
+    .replaceAll("{categoria}", args.categoryName)
+    .replaceAll("{slug}", args.slug);
+
+  // Tenta Groq primeiro, fallback pra Gemini se rate limit / falhar
+  let result: { raw: string; provider: string; model: string };
+  try {
+    result = await tryGroq(prompt);
+  } catch (groqError) {
+    const shouldFallback = isRateLimitOrQuotaError(groqError) || process.env.GROQ_API_KEY === undefined;
+    if (!shouldFallback) {
+      throw groqError;
+    }
+    // Rate limit do Groq - tenta Gemini
+    try {
+      result = await tryGemini(prompt);
+    } catch (geminiError) {
+      const groqMsg = groqError instanceof Error ? groqError.message : String(groqError);
+      const geminiMsg = geminiError instanceof Error ? geminiError.message : String(geminiError);
+      throw new Error(
+        `Ambos provedores falharam. Groq: ${groqMsg.slice(0, 100)} | Gemini: ${geminiMsg.slice(0, 100)}`
+      );
+    }
+  }
+
+  const data = JSON.parse(result.raw) as {
     intro?: string;
     sections?: Array<{ title?: string; body?: string }>;
     faqs?: Array<{ q?: string; a?: string }>;
@@ -144,8 +203,8 @@ export async function generateFetishSeoContent(args: {
       `Tudo sobre ${args.name} entre adultos consensuais brasileiros.`,
     seo_keywords: data.seo_keywords ?? [args.name.toLowerCase()],
     seo_content: seoContent,
-    llm_provider: "groq",
-    llm_model: GROQ_MODEL,
+    llm_provider: result.provider,
+    llm_model: result.model,
     word_count: wordCount,
   };
 }
