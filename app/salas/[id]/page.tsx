@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Crown } from "lucide-react";
+import { ArrowLeft, Crown, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,45 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
   const isInTrial = trialStartedAt
     ? new Date(trialStartedAt).getTime() + 3600 * 1000 > Date.now()
     : false;
+
+  // Se o usuario eh o dono mas o premium dele venceu (e nao esta em trial),
+  // a sala estah oculta pro publico. So o proprio dono ve isso (via RLS
+  // chat_rooms_select_own). Mostra tela de "renove pra reativar".
+  const ownerSelfInactive =
+    isOwner &&
+    room.owner_id !== null &&
+    !profile.is_premium &&
+    !profile.is_admin &&
+    !isInTrial;
+
+  if (ownerSelfInactive) {
+    return (
+      <div className="container py-12">
+        <div className="mx-auto max-w-md rounded-2xl border border-amber-500/40 bg-card p-8 text-center">
+          <EyeOff className="mx-auto mb-3 h-12 w-12 text-amber-300" />
+          <h1 className="text-2xl font-bold">Sua sala está oculta</h1>
+          <p className="mt-3 text-muted-foreground">
+            Como seu Premium venceu, &quot;{room.name}&quot; não aparece mais
+            na listagem pública e ninguém consegue entrar. Toda a conversa
+            está <strong>preservada</strong> — assim que você renovar, a
+            sala volta intacta com todo o histórico.
+          </p>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Após 30 dias sem renovar, a sala será apagada definitivamente.
+          </p>
+          <Button asChild size="lg" variant="premium" className="mt-6 w-full">
+            <Link href="/premium">
+              <Crown className="h-5 w-5" />
+              Renovar Premium agora
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" className="mt-2 w-full">
+            <Link href="/perfil">Voltar ao perfil</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (
     room.is_premium_only &&

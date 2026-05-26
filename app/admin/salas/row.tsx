@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Trash2, ExternalLink, Loader2 } from "lucide-react";
+import { Trash2, ExternalLink, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { useRoomPresenceCount } from "@/hooks/useRoomPresenceCount";
@@ -20,6 +20,7 @@ interface AdminRoom {
   created_at: string;
   deleted_at: string | null;
   owner: { username: string | null; display_name: string | null } | null;
+  ownerInactive?: boolean;
 }
 
 export function AdminRoomRow({ room }: { room: AdminRoom }) {
@@ -69,6 +70,12 @@ export function AdminRoomRow({ room }: { room: AdminRoom }) {
             {room.name}
           </span>
           {room.deleted_at && <Badge variant="destructive">Deletada</Badge>}
+          {!room.deleted_at && room.ownerInactive && (
+            <Badge variant="outline" className="border-amber-500/40 text-amber-200">
+              <EyeOff className="mr-1 h-3 w-3" />
+              Oculta · dono inativo
+            </Badge>
+          )}
         </div>
         <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
           <span>@{room.owner?.username ?? "—"}</span>

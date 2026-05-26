@@ -16,11 +16,17 @@ export default async function NewRoomPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_premium, last_room_created_at")
+    .select("is_premium, last_room_created_at, trial_started_at")
     .eq("id", user.id)
     .single();
 
-  if (!profile?.is_premium) {
+  const trialStartedAt = (profile as { trial_started_at: string | null } | null)
+    ?.trial_started_at;
+  const isInTrial = trialStartedAt
+    ? new Date(trialStartedAt).getTime() + 3600 * 1000 > Date.now()
+    : false;
+
+  if (!profile?.is_premium && !isInTrial) {
     return (
       <div className="container py-12">
         <Card className="mx-auto max-w-md text-center">
@@ -28,7 +34,7 @@ export default async function NewRoomPage() {
             <Crown className="mx-auto h-12 w-12 text-premium" />
             <CardTitle>Recurso Premium</CardTitle>
             <CardDescription>
-              Apenas usuários Premium podem criar suas próprias salas.
+              Seu trial gratuito acabou. Vire Premium pra criar suas próprias salas.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -105,8 +111,23 @@ export default async function NewRoomPage() {
     <div className="container max-w-2xl py-8">
       <h1 className="text-3xl font-bold tracking-tight">Criar nova sala</h1>
       <p className="mt-2 text-muted-foreground">
-        Sua sala ficará disponível imediatamente para outros usuários Premium.
+        Sua sala ficará disponível imediatamente para outros usuários.
       </p>
+
+      {isInTrial && !profile.is_premium && (
+        <div className="mt-6 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
+          <p className="text-sm font-semibold text-amber-200">
+            Atenção: você está no trial gratuito
+          </p>
+          <p className="mt-1 text-sm text-amber-100/80">
+            Sua sala ficará pública imediatamente, mas será{" "}
+            <strong>ocultada automaticamente</strong> quando seu trial expirar.
+            Vire <Link href="/premium" className="underline">Premium</Link> pra
+            mantê-la ativa pra sempre — toda a conversa fica salva e volta
+            intacta se você renovar.
+          </p>
+        </div>
+      )}
 
       <Card className="mt-6">
         <CardContent className="pt-6">

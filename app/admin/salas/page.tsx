@@ -14,11 +14,29 @@ interface AdminRoomItem {
   active_users_count: number;
   created_at: string;
   deleted_at: string | null;
-  owner: { username: string | null; display_name: string | null } | null;
+  owner: {
+    username: string | null;
+    display_name: string | null;
+    is_premium: boolean | null;
+    is_admin: boolean | null;
+    trial_started_at: string | null;
+  } | null;
   fetish: {
     name: string | null;
     category: { id: string; name: string; emoji: string | null; sort_order: number } | null;
   } | null;
+}
+
+function isOwnerInactive(item: AdminRoomItem): boolean {
+  if (item.owner_id === null) return false;
+  const o = item.owner;
+  if (!o) return true;
+  if (o.is_admin || o.is_premium) return false;
+  if (o.trial_started_at) {
+    const end = new Date(o.trial_started_at).getTime() + 3600 * 1000;
+    if (end > Date.now()) return false;
+  }
+  return true;
 }
 
 const USER_GROUP_KEY = "__user__";
@@ -29,7 +47,7 @@ export default async function AdminRoomsPage() {
     .from("chat_rooms")
     .select(
       `id, name, owner_id, is_featured, is_premium_only, active_users_count, created_at, deleted_at,
-       owner:profiles!chat_rooms_owner_id_fkey(username, display_name),
+       owner:profiles!chat_rooms_owner_id_fkey(username, display_name, is_premium, is_admin, trial_started_at),
        fetish:fetishes(name, category:categories(id, name, emoji, sort_order))`
     )
     .order("created_at", { ascending: false });
@@ -97,7 +115,10 @@ export default async function AdminRoomsPage() {
               <CardContent className="border-t border-border/50 p-0">
                 <div className="divide-y divide-border/50">
                   {g.rooms.map((r) => (
-                    <AdminRoomRow key={r.id} room={r as never} />
+                    <AdminRoomRow
+                      key={r.id}
+                      room={{ ...r, ownerInactive: isOwnerInactive(r) } as never}
+                    />
                   ))}
                 </div>
               </CardContent>
