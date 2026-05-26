@@ -1,5 +1,5 @@
 import Groq from "groq-sdk";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
 import type { SeoFetishContent } from "@/types/database";
 
 const GROQ_MODEL = "llama-3.3-70b-versatile";
@@ -112,16 +112,34 @@ async function tryGemini(prompt: string): Promise<{ raw: string; provider: strin
   // trunca quando usa responseMimeType=application/json)
   const enhancedPrompt = `${prompt}\n\nIMPORTANTE: A resposta DEVE ser um JSON valido completo, com TODAS as chaves fechadas corretamente. Nao trunca a resposta. Se nao couber tudo, prefira textos mais curtos por section/faq mas COMPLETE o JSON.`;
 
+  // Desabilita safety filters padrao pra conteudo adulto educativo.
+  // Sem isso, Gemini bloqueia tudo que mencione sexualidade mesmo
+  // em contexto profissional/educativo.
+  const safetySettings = [
+    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+  ];
+
   const model = genAI.getGenerativeModel({
     model: GEMINI_MODEL,
+    safetySettings,
     generationConfig: {
       temperature: 0.7,
-      maxOutputTokens: 16000, // gemini suporta ate 8192 default, vamos pedir muito
+      maxOutputTokens: 16000,
       responseMimeType: "application/json",
     },
   });
 
   const result = await model.generateContent(enhancedPrompt);
+
+  // Detecta se foi bloqueado por safety
+  const finishReason = result.response.candidates?.[0]?.finishReason;
+  if (finishReason === "SAFETY") {
+    throw new Error("Gemini bloqueou por safety filter (mesmo com BLOCK_NONE configurado)");
+  }
+
   const raw = result.response.text();
   if (!raw) throw new Error("Gemini retornou resposta vazia");
   return { raw, provider: "gemini", model: GEMINI_MODEL };
