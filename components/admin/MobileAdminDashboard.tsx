@@ -3,19 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  Bell,
-  BellOff,
-  ChevronRight,
-  DollarSign,
-  Home,
-  MessageCircle,
-  Plus,
-  RefreshCw,
-  Sparkles,
-  UserPlus,
-} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils/cn";
@@ -94,17 +81,27 @@ interface DmMessageRealtimePayload {
   created_at: string;
 }
 
-const FILTERS: Array<{
-  id: MobileFeedKind | "all";
-  label: string;
-  icon: typeof DollarSign;
-}> = [
-  { id: "all", label: "Tudo", icon: Sparkles },
-  { id: "payment", label: "Pagamentos", icon: DollarSign },
-  { id: "signup", label: "Cadastros", icon: UserPlus },
-  { id: "chat_active", label: "Chats", icon: MessageCircle },
-  { id: "room_created", label: "Salas", icon: Plus },
+const FILTERS: Array<{ id: MobileFeedKind | "all"; label: string }> = [
+  { id: "all", label: "Tudo" },
+  { id: "payment", label: "Pagamentos" },
+  { id: "signup", label: "Cadastros" },
+  { id: "chat_active", label: "Chats" },
+  { id: "room_created", label: "Salas" },
 ];
+
+const KIND_LABEL: Record<MobileFeedKind, string> = {
+  payment: "Pagamento",
+  signup: "Cadastro",
+  room_created: "Sala nova",
+  chat_active: "Chat",
+};
+
+const KIND_COLOR: Record<MobileFeedKind, string> = {
+  payment: "text-emerald-400 border-emerald-500/40",
+  signup: "text-sky-400 border-sky-500/40",
+  room_created: "text-primary border-primary/40",
+  chat_active: "text-amber-400 border-amber-500/40",
+};
 
 const MAX_FEED_LENGTH = 200;
 const FLASH_DURATION_MS = 1500;
@@ -274,7 +271,6 @@ export function MobileAdminDashboard({
         async (payload) => {
           const p = payload.new as PaymentRealtimePayload;
           const old = payload.old as PaymentRealtimePayload;
-          // Pagamento que mudou pra paid (ex.: webhook confirmou PIX)
           if (p.status === "paid" && old.status !== "paid") {
             const [profile, plan] = await Promise.all([
               fetchProfile(supabase, p.user_id),
@@ -378,7 +374,6 @@ export function MobileAdminDashboard({
             msgsLast5Min: s.msgsLast5Min + 1,
           }));
           flashCard("chats");
-          // Sem som pra mensagens normais (seria muito ruidoso)
         }
       )
       .on(
@@ -421,57 +416,49 @@ export function MobileAdminDashboard({
   }, [router]);
 
   return (
-    <div className="mx-auto max-w-md min-h-screen bg-background pb-20">
-      {/* Header sticky */}
+    <div className="mx-auto min-h-screen max-w-md bg-background pb-20">
       <header className="sticky top-0 z-40 border-b border-border/40 bg-background/95 backdrop-blur-sm">
         <div className="flex items-center justify-between gap-2 px-4 py-3">
           <Link
             href="/admin"
-            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition hover:text-foreground"
+            className="text-xs text-muted-foreground transition hover:text-foreground"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Painel
+            Voltar
           </Link>
           <div className="flex items-center gap-2">
-            <h1 className="text-sm font-bold">Admin Mobile</h1>
-            <span className="flex h-2 w-2">
+            <h1 className="text-sm font-bold">Admin</h1>
+            <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-emerald-400/70" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
             </span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
               onClick={toggleSound}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
-              aria-label={soundEnabled ? "Desligar som" : "Ligar som"}
-              title={soundEnabled ? "Som ligado" : "Som desligado"}
-            >
-              {soundEnabled ? (
-                <Bell className="h-4 w-4" />
-              ) : (
-                <BellOff className="h-4 w-4 text-muted-foreground/50" />
+              className={cn(
+                "rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider transition",
+                soundEnabled
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border/40 bg-card/30 text-muted-foreground/60"
               )}
+            >
+              Som {soundEnabled ? "on" : "off"}
             </button>
             <button
               type="button"
               onClick={handleRefresh}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
-              aria-label="Atualizar"
               disabled={refreshing}
+              className="rounded-full border border-border/40 bg-card/30 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition hover:border-primary/40 hover:text-foreground disabled:opacity-50"
             >
-              <RefreshCw
-                className={cn("h-4 w-4", refreshing && "animate-spin")}
-              />
+              {refreshing ? "..." : "Atualizar"}
             </button>
           </div>
         </div>
       </header>
 
-      {/* Cards 2x2 */}
       <section className="grid grid-cols-2 gap-2 p-3">
         <StatBox
-          icon={DollarSign}
           label="Pagamentos 24h"
           value={brl(stats.revenueCents24h)}
           sub={`${stats.paymentsCount24h} venda(s)`}
@@ -480,7 +467,6 @@ export function MobileAdminDashboard({
           href="/admin/planos"
         />
         <StatBox
-          icon={UserPlus}
           label="Cadastros 24h"
           value={String(stats.signupsCount24h)}
           sub="novos usuários"
@@ -489,7 +475,6 @@ export function MobileAdminDashboard({
           href="/admin/usuarios"
         />
         <StatBox
-          icon={MessageCircle}
           label="Chats ativos"
           value={String(stats.msgsLast5Min)}
           sub="msgs últimos 5min"
@@ -498,7 +483,6 @@ export function MobileAdminDashboard({
           href="/admin/ao-vivo"
         />
         <StatBox
-          icon={Plus}
           label="Salas novas 24h"
           value={String(stats.newRoomsCount24h)}
           sub="criadas por users"
@@ -508,25 +492,22 @@ export function MobileAdminDashboard({
         />
       </section>
 
-      {/* Filtros */}
       <div className="sticky top-[57px] z-30 border-b border-border/40 bg-background/95 px-3 py-2 backdrop-blur-sm">
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
+        <div className="scrollbar-none flex gap-1.5 overflow-x-auto">
           {FILTERS.map((f) => {
             const active = filter === f.id;
-            const Icon = f.icon;
             return (
               <button
                 key={f.id}
                 type="button"
                 onClick={() => setFilter(f.id)}
                 className={cn(
-                  "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition",
+                  "shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition",
                   active
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-border/50 bg-card/50 text-muted-foreground hover:border-primary/40 hover:text-foreground"
                 )}
               >
-                <Icon className="h-3 w-3" />
                 {f.label}
               </button>
             );
@@ -534,41 +515,34 @@ export function MobileAdminDashboard({
         </div>
       </div>
 
-      {/* Feed */}
       <ul className="space-y-1.5 p-3">
         {filtered.length === 0 ? (
           <li className="rounded-xl border border-dashed border-border/40 p-8 text-center text-xs text-muted-foreground">
             Nada por aqui ainda. Eventos novos aparecem em tempo real.
           </li>
         ) : (
-          filtered.map((e) => (
-            <FeedItem key={e.id} event={e} />
-          ))
+          filtered.map((e) => <FeedItem key={e.id} event={e} />)
         )}
       </ul>
 
-      {/* Bottom nav fixo */}
       <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md border-t border-border/50 bg-background/95 backdrop-blur-sm">
         <div className="grid grid-cols-3">
           <Link
             href="/admin/mobile"
-            className="flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium text-primary"
+            className="py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-primary"
           >
-            <Sparkles className="h-5 w-5" />
             Eventos
           </Link>
           <Link
             href="/admin/ao-vivo"
-            className="flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium text-muted-foreground transition hover:text-foreground"
+            className="py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground transition hover:text-foreground"
           >
-            <MessageCircle className="h-5 w-5" />
-            Chats ao vivo
+            Ao vivo
           </Link>
           <Link
             href="/admin"
-            className="flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium text-muted-foreground transition hover:text-foreground"
+            className="py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground transition hover:text-foreground"
           >
-            <Home className="h-5 w-5" />
             Painel
           </Link>
         </div>
@@ -578,7 +552,6 @@ export function MobileAdminDashboard({
 }
 
 interface StatBoxProps {
-  icon: typeof DollarSign;
   label: string;
   value: string;
   sub: string;
@@ -587,47 +560,34 @@ interface StatBoxProps {
   href: string;
 }
 
-function StatBox({ icon: Icon, label, value, sub, tone, flash, href }: StatBoxProps) {
-  const toneClasses = {
-    emerald: {
-      bg: "bg-emerald-500/15",
-      ring: "ring-emerald-500/50",
-      text: "text-emerald-400",
-    },
-    sky: {
-      bg: "bg-sky-500/15",
-      ring: "ring-sky-500/50",
-      text: "text-sky-400",
-    },
-    amber: {
-      bg: "bg-amber-500/15",
-      ring: "ring-amber-500/50",
-      text: "text-amber-400",
-    },
-    primary: {
-      bg: "bg-primary/15",
-      ring: "ring-primary/50",
-      text: "text-primary",
-    },
+function StatBox({ label, value, sub, tone, flash, href }: StatBoxProps) {
+  const toneRing = {
+    emerald: "ring-emerald-500/50",
+    sky: "ring-sky-500/50",
+    amber: "ring-amber-500/50",
+    primary: "ring-primary/50",
+  }[tone];
+
+  const toneBar = {
+    emerald: "bg-emerald-500",
+    sky: "bg-sky-500",
+    amber: "bg-amber-500",
+    primary: "bg-primary",
   }[tone];
 
   return (
     <Link
       href={href}
       className={cn(
-        "block rounded-xl border border-border/40 bg-card/30 p-3 transition active:scale-[0.98]",
-        flash && `ring-2 ${toneClasses.ring}`
+        "relative block overflow-hidden rounded-xl border border-border/40 bg-card/30 p-3 transition active:scale-[0.98]",
+        flash && `ring-2 ${toneRing}`
       )}
     >
-      <div className="flex items-center gap-2">
-        <div className={cn("rounded-lg p-1.5", toneClasses.bg)}>
-          <Icon className={cn("h-3.5 w-3.5", toneClasses.text)} />
-        </div>
-        <p className="truncate text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-          {label}
-        </p>
-      </div>
-      <p className="mt-2 truncate text-xl font-bold tabular-nums leading-tight">
+      <div className={cn("absolute inset-x-0 top-0 h-0.5", toneBar)} />
+      <p className="truncate text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-2 truncate text-xl font-bold leading-tight tabular-nums">
         {value}
       </p>
       <p className="truncate text-[10px] text-muted-foreground">{sub}</p>
@@ -636,56 +596,22 @@ function StatBox({ icon: Icon, label, value, sub, tone, flash, href }: StatBoxPr
 }
 
 function FeedItem({ event }: { event: MobileFeedEvent }) {
-  const kindMeta: Record<
-    MobileFeedKind,
-    { icon: typeof DollarSign; tone: string; bg: string }
-  > = {
-    payment: {
-      icon: DollarSign,
-      tone: "text-emerald-400",
-      bg: "bg-emerald-500/15",
-    },
-    signup: {
-      icon: UserPlus,
-      tone: "text-sky-400",
-      bg: "bg-sky-500/15",
-    },
-    room_created: {
-      icon: Plus,
-      tone: "text-primary",
-      bg: "bg-primary/15",
-    },
-    chat_active: {
-      icon: MessageCircle,
-      tone: "text-amber-400",
-      bg: "bg-amber-500/15",
-    },
-  };
-
-  const meta = kindMeta[event.kind];
-  const Icon = meta.icon;
-
   return (
     <li>
       <Link
         href={event.href}
-        className="flex items-center gap-3 rounded-xl border border-border/40 bg-card/30 p-3 transition active:scale-[0.99] hover:border-primary/40 hover:bg-card/50"
+        className="flex items-center gap-3 rounded-xl border border-border/40 bg-card/30 p-3 transition hover:border-primary/40 hover:bg-card/50 active:scale-[0.99]"
       >
         {event.avatarUrl ? (
           <Avatar className="h-9 w-9 shrink-0">
             <AvatarImage src={event.avatarUrl} alt={event.userLabel ?? ""} />
-            <AvatarFallback className={meta.bg}>
-              <Icon className={cn("h-4 w-4", meta.tone)} />
+            <AvatarFallback className="bg-muted text-[10px] uppercase">
+              {event.userLabel?.slice(0, 2) ?? "?"}
             </AvatarFallback>
           </Avatar>
         ) : (
-          <div
-            className={cn(
-              "grid h-9 w-9 shrink-0 place-items-center rounded-full",
-              meta.bg
-            )}
-          >
-            <Icon className={cn("h-4 w-4", meta.tone)} />
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-muted/30 text-[10px] uppercase text-muted-foreground">
+            {event.title.slice(0, 2)}
           </div>
         )}
         <div className="min-w-0 flex-1">
@@ -695,11 +621,20 @@ function FeedItem({ event }: { event: MobileFeedEvent }) {
               há {timeAgo(event.at)}
             </span>
           </div>
-          <p className="truncate text-xs text-muted-foreground">
-            {event.subtitle}
-          </p>
+          <div className="flex items-center gap-2">
+            <span
+              className={cn(
+                "shrink-0 rounded border px-1.5 py-px text-[9px] font-semibold uppercase tracking-wider",
+                KIND_COLOR[event.kind]
+              )}
+            >
+              {KIND_LABEL[event.kind]}
+            </span>
+            <p className="truncate text-xs text-muted-foreground">
+              {event.subtitle}
+            </p>
+          </div>
         </div>
-        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/50" />
       </Link>
     </li>
   );

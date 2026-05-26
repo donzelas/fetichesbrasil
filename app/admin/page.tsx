@@ -300,9 +300,8 @@ export default async function AdminHomePage() {
         </div>
         <Link
           href="/admin/mobile"
-          className="hidden md:inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/20"
+          className="hidden md:inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/20"
         >
-          <Activity className="h-3.5 w-3.5" />
           Versão mobile
         </Link>
       </div>
