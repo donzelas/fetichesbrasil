@@ -12,6 +12,7 @@ import {
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EbookBanner } from "@/components/landing/EbookBanner";
 
 export interface LandingCategoryData {
   id: string;
@@ -82,6 +83,8 @@ export function LandingPage({ onlineUsers, activeRooms, categories = [] }: Landi
           </p>
         </div>
       </section>
+
+      <EbookBanner />
 
       <section className="container py-16">
         <div className="mx-auto max-w-3xl rounded-3xl border border-primary/20 bg-card/50 p-8 backdrop-blur md:p-12">

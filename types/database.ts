@@ -840,6 +840,21 @@ export interface Database {
         Args: { p_days?: number; p_limit?: number };
         Returns: Array<{ path: string; views: number; uniques: number }>;
       };
+      featured_ebook: {
+        Args: Record<string, never>;
+        Returns: Array<{
+          id: string;
+          slug: string;
+          title: string;
+          subtitle: string | null;
+          hook: string | null;
+          price_cents: number;
+          original_price_cents: number | null;
+          currency: string;
+          cover_image_url: string | null;
+          accent_color: string | null;
+        }>;
+      };
       analytics_top_referrers: {
         Args: { p_days?: number; p_limit?: number };
         Returns: Array<{ referrer: string; views: number }>;

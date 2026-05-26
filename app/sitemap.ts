@@ -67,6 +67,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       { data: categories },
       { data: fetishes },
       { data: posts },
+      { data: ebooks },
     ] = await Promise.all([
       supabase.from("categories").select("slug, name").order("sort_order"),
       supabase
@@ -80,6 +81,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .is("deleted_at", null)
         .order("last_activity_at", { ascending: false })
         .limit(5000),
+      supabase
+        .from("ebooks")
+        .select("slug, updated_at")
+        .eq("is_active", true),
     ]);
 
     const categoryPages: MetadataRoute.Sitemap = (categories ?? []).map((c) => ({
@@ -103,7 +108,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.5,
     }));
 
-    return [...staticPages, ...categoryPages, ...fetishePages, ...blogPages];
+    const ebookPages: MetadataRoute.Sitemap = (ebooks ?? []).map((e) => ({
+      url: `${SITE_URL}/ebooks/${e.slug}`,
+      lastModified: e.updated_at ? new Date(e.updated_at) : now,
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    }));
+
+    return [
+      ...staticPages,
+      ...categoryPages,
+      ...fetishePages,
+      ...blogPages,
+      ...ebookPages,
+    ];
   } catch {
     return staticPages;
   }
