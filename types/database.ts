@@ -28,6 +28,7 @@ export interface Database {
           is_admin: boolean;
           current_room_id: string | null;
           last_room_created_at: string | null;
+          trial_started_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -42,6 +43,7 @@ export interface Database {
           is_admin?: boolean;
           current_room_id?: string | null;
           last_room_created_at?: string | null;
+          trial_started_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -56,6 +58,7 @@ export interface Database {
           is_admin?: boolean;
           current_room_id?: string | null;
           last_room_created_at?: string | null;
+          trial_started_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -756,6 +759,9 @@ export interface Database {
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_premium: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_room_owner: { Args: { p_room_id: string }; Returns: boolean };
+      is_in_trial: { Args: Record<PropertyKey, never>; Returns: boolean };
+      trial_seconds_left: { Args: Record<PropertyKey, never>; Returns: number };
+      trial_duration_seconds: { Args: Record<PropertyKey, never>; Returns: number };
       join_room: { Args: { p_room_id: string }; Returns: undefined };
       leave_current_room: { Args: Record<PropertyKey, never>; Returns: undefined };
       soft_delete_room: { Args: { p_room_id: string }; Returns: undefined };

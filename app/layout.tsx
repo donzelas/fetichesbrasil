@@ -9,6 +9,7 @@ import { AdminSessionKeeper } from "@/components/auth/AdminSessionKeeper";
 import { Toaster } from "@/components/ui/sonner";
 import { OrganizationJsonLd, WebsiteJsonLd } from "@/components/seo/JsonLd";
 import { PageViewTracker } from "@/components/analytics/PageViewTracker";
+import { TrialExpiredModal } from "@/components/trial/TrialExpiredModal";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://fetichesbrasil.com.br";
 
@@ -105,6 +106,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AdminSessionKeeper />
         <Suspense fallback={null}>
           <PageViewTracker />
+        </Suspense>
+        <Suspense fallback={null}>
+          <TrialExpiredModal />
         </Suspense>
         <div className="flex min-h-screen flex-col">
           <Header />

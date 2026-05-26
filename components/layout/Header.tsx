@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { TrialCountdownBadge } from "@/components/trial/TrialCountdownBadge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -178,6 +179,9 @@ export function Header() {
             </DropdownMenu>
           ) : user ? (
             <>
+              {/* Trial countdown - so aparece se nao for premium/admin */}
+              {!isPremium && !isAdmin && <TrialCountdownBadge />}
+
               {isPremium && (
                 <Badge variant="premium" className="hidden sm:inline-flex">
                   <Crown className="mr-1 h-3 w-3" />
