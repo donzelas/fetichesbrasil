@@ -112,7 +112,7 @@ values (
   'CUCKOLD: O Método em 5 Passos',
   'Aprenda a iniciar sua parceira sem perder ela',
   'O guia discreto e direto que tira sua fantasia do esconderijo e transforma em realidade — sem improviso, sem assustar ela, sem cagar tudo.',
-  4700,
+  3990,
   29700,
   'https://pay.hotmart.com/A82116307F',
   '#dc2626',
@@ -232,7 +232,7 @@ values (
   },
   "scarcity": {
     "title": "Por que esse preço?",
-    "text": "O conteúdo desse ebook custaria fácil R$ 500-1500 com um terapeuta sexual. Estamos cobrando R$ 47 porque acreditamos que casal brasileiro merece acesso a esse conteúdo — e porque cada cliente satisfeito traz mais 3 indicados."
+    "text": "O conteúdo desse ebook custaria fácil R$ 500-1500 com um terapeuta sexual. Estamos cobrando R$ 39,90 porque acreditamos que casal brasileiro merece acesso a esse conteúdo — e porque cada cliente satisfeito traz mais 3 indicados."
   },
   "faq": [
     {
