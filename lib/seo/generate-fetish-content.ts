@@ -108,33 +108,58 @@ async function tryGemini(prompt: string): Promise<{ raw: string; provider: strin
   if (!apiKey) throw new Error("GEMINI_API_KEY nao configurada");
 
   const genAI = new GoogleGenerativeAI(apiKey);
+  // Reforca instrucao de JSON valido no proprio prompt (Gemini as vezes
+  // trunca quando usa responseMimeType=application/json)
+  const enhancedPrompt = `${prompt}\n\nIMPORTANTE: A resposta DEVE ser um JSON valido completo, com TODAS as chaves fechadas corretamente. Nao trunca a resposta. Se nao couber tudo, prefira textos mais curtos por section/faq mas COMPLETE o JSON.`;
+
   const model = genAI.getGenerativeModel({
     model: GEMINI_MODEL,
     generationConfig: {
-      temperature: 0.8,
-      maxOutputTokens: 8000,
+      temperature: 0.7,
+      maxOutputTokens: 16000, // gemini suporta ate 8192 default, vamos pedir muito
       responseMimeType: "application/json",
     },
   });
 
-  const result = await model.generateContent(prompt);
+  const result = await model.generateContent(enhancedPrompt);
   const raw = result.response.text();
   if (!raw) throw new Error("Gemini retornou resposta vazia");
   return { raw, provider: "gemini", model: GEMINI_MODEL };
 }
 
-function isRateLimitOrQuotaError(e: unknown): boolean {
-  if (!e) return false;
-  const msg = (e instanceof Error ? e.message : String(e)).toLowerCase();
-  return (
-    msg.includes("rate limit") ||
-    msg.includes("rate_limit") ||
-    msg.includes("429") ||
-    msg.includes("quota") ||
-    msg.includes("tpd") ||
-    msg.includes("tokens per day") ||
-    msg.includes("too many requests")
-  );
+/**
+ * Sanitiza string JSON crua removendo caracteres de controle
+ * invisiveis que LLMs as vezes geram e quebram o JSON.parse.
+ */
+function sanitizeJsonString(raw: string): string {
+  // Remove caracteres de controle exceto \n \r \t
+  // eslint-disable-next-line no-control-regex
+  return raw.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
+}
+
+function safeParseJson<T>(raw: string): T {
+  // Primeiro tenta parse direto
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    // Tenta sanitizar
+    const cleaned = sanitizeJsonString(raw);
+    try {
+      return JSON.parse(cleaned) as T;
+    } catch (e) {
+      // Tenta extrair so o JSON entre { e } (LLM as vezes adiciona texto antes/depois)
+      const start = cleaned.indexOf("{");
+      const end = cleaned.lastIndexOf("}");
+      if (start >= 0 && end > start) {
+        try {
+          return JSON.parse(cleaned.slice(start, end + 1)) as T;
+        } catch {
+          /* desiste */
+        }
+      }
+      throw e;
+    }
+  }
 }
 
 export async function generateFetishSeoContent(args: {
@@ -146,28 +171,48 @@ export async function generateFetishSeoContent(args: {
     .replaceAll("{categoria}", args.categoryName)
     .replaceAll("{slug}", args.slug);
 
-  // Tenta Groq primeiro, fallback pra Gemini se rate limit / falhar
-  let result: { raw: string; provider: string; model: string };
+  type ParsedSeoData = {
+    intro?: string;
+    sections?: Array<{ title?: string; body?: string }>;
+    faqs?: Array<{ q?: string; a?: string }>;
+    internal_links_hint?: string[];
+    seo_title?: string;
+    seo_description?: string;
+    seo_keywords?: string[];
+  };
+
+  // Tenta Groq -> se falhar por qualquer motivo (rate limit, JSON invalido,
+  // resposta truncada, etc), tenta Gemini automaticamente.
+  async function tryProviderWithParse(provider: "groq" | "gemini") {
+    const r =
+      provider === "groq" ? await tryGroq(prompt) : await tryGemini(prompt);
+    const parsed = safeParseJson<ParsedSeoData>(r.raw);
+    return { ...r, parsed };
+  }
+
+  let result: {
+    raw: string;
+    provider: string;
+    model: string;
+    parsed: ParsedSeoData;
+  };
+
   try {
-    result = await tryGroq(prompt);
+    result = await tryProviderWithParse("groq");
   } catch (groqError) {
-    const shouldFallback = isRateLimitOrQuotaError(groqError) || process.env.GROQ_API_KEY === undefined;
-    if (!shouldFallback) {
-      throw groqError;
-    }
-    // Rate limit do Groq - tenta Gemini
+    const groqMsg = groqError instanceof Error ? groqError.message : String(groqError);
+    console.warn(`[seo] Groq falhou (${groqMsg.slice(0, 100)}), tentando Gemini...`);
     try {
-      result = await tryGemini(prompt);
+      result = await tryProviderWithParse("gemini");
     } catch (geminiError) {
-      const groqMsg = groqError instanceof Error ? groqError.message : String(groqError);
       const geminiMsg = geminiError instanceof Error ? geminiError.message : String(geminiError);
       throw new Error(
-        `Ambos provedores falharam. Groq: ${groqMsg.slice(0, 100)} | Gemini: ${geminiMsg.slice(0, 100)}`
+        `Ambos provedores falharam. Groq: ${groqMsg.slice(0, 80)} | Gemini: ${geminiMsg.slice(0, 80)}`
       );
     }
   }
 
-  const data = JSON.parse(result.raw) as {
+  const data = result.parsed as {
     intro?: string;
     sections?: Array<{ title?: string; body?: string }>;
     faqs?: Array<{ q?: string; a?: string }>;
