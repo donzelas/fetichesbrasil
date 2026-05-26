@@ -3,7 +3,13 @@ import { GoogleGenerativeAI, HarmBlockThreshold, HarmCategory } from "@google/ge
 import type { SeoFetishContent } from "@/types/database";
 
 const GROQ_MODEL = "llama-3.3-70b-versatile";
-const GEMINI_MODEL = "gemini-flash-latest";
+// IMPORTANTE: NAO usar "gemini-flash-latest" - resolve para gemini-3.5-flash
+// que so tem 20 reqs/dia no free tier. Lista de modelos estaveis:
+//   - gemini-2.5-flash: 250 reqs/dia (estavel, recomendado)
+//   - gemini-1.5-flash: 1500 reqs/dia (mais antigo mas free maior)
+//   - gemini-1.5-flash-8b: 1500 reqs/dia (mais barato)
+// Ordem de fallback: tenta 2.5-flash primeiro, depois 1.5-flash
+const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b"];
 
 const PROMPT = `Voce e um redator SEO especialista em educacao sexual adulta
 para o publico brasileiro. Tom EDUCATIVO, INFORMATIVO e PROFISSIONAL -
@@ -103,18 +109,13 @@ async function tryGroq(prompt: string): Promise<{ raw: string; provider: string;
   return { raw, provider: "groq", model: GROQ_MODEL };
 }
 
-async function tryGemini(prompt: string): Promise<{ raw: string; provider: string; model: string }> {
+async function tryGeminiModel(prompt: string, modelName: string): Promise<{ raw: string; provider: string; model: string }> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY nao configurada");
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  // Reforca instrucao de JSON valido no proprio prompt (Gemini as vezes
-  // trunca quando usa responseMimeType=application/json)
   const enhancedPrompt = `${prompt}\n\nIMPORTANTE: A resposta DEVE ser um JSON valido completo, com TODAS as chaves fechadas corretamente. Nao trunca a resposta. Se nao couber tudo, prefira textos mais curtos por section/faq mas COMPLETE o JSON.`;
 
-  // Desabilita safety filters padrao pra conteudo adulto educativo.
-  // Sem isso, Gemini bloqueia tudo que mencione sexualidade mesmo
-  // em contexto profissional/educativo.
   const safetySettings = [
     { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
     { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -123,7 +124,7 @@ async function tryGemini(prompt: string): Promise<{ raw: string; provider: strin
   ];
 
   const model = genAI.getGenerativeModel({
-    model: GEMINI_MODEL,
+    model: modelName,
     safetySettings,
     generationConfig: {
       temperature: 0.7,
@@ -134,15 +135,33 @@ async function tryGemini(prompt: string): Promise<{ raw: string; provider: strin
 
   const result = await model.generateContent(enhancedPrompt);
 
-  // Detecta se foi bloqueado por safety
   const finishReason = result.response.candidates?.[0]?.finishReason;
   if (finishReason === "SAFETY") {
-    throw new Error("Gemini bloqueou por safety filter (mesmo com BLOCK_NONE configurado)");
+    throw new Error(`Gemini ${modelName} bloqueou por safety filter`);
   }
 
   const raw = result.response.text();
-  if (!raw) throw new Error("Gemini retornou resposta vazia");
-  return { raw, provider: "gemini", model: GEMINI_MODEL };
+  if (!raw) throw new Error(`Gemini ${modelName} retornou resposta vazia`);
+  return { raw, provider: "gemini", model: modelName };
+}
+
+/**
+ * Tenta Gemini em cascata: gemini-2.5-flash → 1.5-flash → 1.5-flash-8b.
+ * Cada um tem free tier separado. Se um bate rate limit, vai pro proximo.
+ */
+async function tryGemini(prompt: string): Promise<{ raw: string; provider: string; model: string }> {
+  const errors: string[] = [];
+  for (const modelName of GEMINI_MODELS) {
+    try {
+      return await tryGeminiModel(prompt, modelName);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      errors.push(`${modelName}: ${msg.slice(0, 150)}`);
+      console.warn(`[seo] Gemini ${modelName} falhou: ${msg.slice(0, 100)}`);
+      // Continua tentando proximo modelo
+    }
+  }
+  throw new Error(`Todos os modelos Gemini falharam: ${errors.join(" | ")}`);
 }
 
 /**
