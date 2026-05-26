@@ -20,8 +20,6 @@ export function BlogImageCarousel({ urls, alt = "Imagem do post", className }: B
   const [index, setIndex] = useState(0);
   const [lightbox, setLightbox] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
-  // Blog e publico/gratuito - nao precisa borrar imagens ao perder foco.
-  // Mantemos so anti-right-click e anti-drag (PROTECTED_IMG_STYLE).
 
   const pointerStart = useRef<{ x: number; y: number } | null>(null);
   const isSwiping = useRef(false);
@@ -36,7 +34,21 @@ export function BlogImageCarousel({ urls, alt = "Imagem do post", className }: B
     setIndex((i) => (i + 1) % urls.length);
   }, [urls.length]);
 
-  // Navegação por teclado quando o lightbox está aberto
+  // Pre-carrega imagens adjacentes pra troca instantanea
+  useEffect(() => {
+    if (urls.length <= 1) return;
+    const toPreload = [
+      urls[(safeIndex + 1) % urls.length],
+      urls[(safeIndex - 1 + urls.length) % urls.length],
+    ];
+    toPreload.forEach((src) => {
+      if (!src) return;
+      const img = new Image();
+      img.src = src;
+    });
+  }, [safeIndex, urls]);
+
+  // Navegacao por teclado quando o lightbox esta aberto
   useEffect(() => {
     if (!lightbox) return;
     const onKey = (e: KeyboardEvent) => {
@@ -55,7 +67,16 @@ export function BlogImageCarousel({ urls, alt = "Imagem do post", className }: B
     return () => window.removeEventListener("keydown", onKey);
   }, [lightbox, prev, next]);
 
-  // Handlers de swipe (touch + mouse) via pointer events
+  // Bloqueia scroll do body quando lightbox aberto
+  useEffect(() => {
+    if (!lightbox) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [lightbox]);
+
   const onPointerDown = (e: React.PointerEvent) => {
     if (urls.length <= 1) return;
     pointerStart.current = { x: e.clientX, y: e.clientY };
@@ -82,14 +103,12 @@ export function BlogImageCarousel({ urls, alt = "Imagem do post", className }: B
     pointerStart.current = null;
     setDragOffset(0);
     if (swiped) {
-      // impede que o click bubble (ex.: fechar lightbox / abrir lightbox)
       e.preventDefault();
       e.stopPropagation();
       if (Math.abs(dx) > SWIPE_THRESHOLD) {
         if (dx < 0) next();
         else prev();
       }
-      // pequeno delay para evitar disparo do onClick após swipe
       setTimeout(() => {
         isSwiping.current = false;
       }, 0);
@@ -127,14 +146,14 @@ export function BlogImageCarousel({ urls, alt = "Imagem do post", className }: B
             src={current}
             alt={alt}
             data-protected="true"
-            className={cn(
-              "h-full w-full object-cover transition",
-              !dragOffset && "group-hover:scale-[1.02]"
-            )}
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-cover"
             style={{
               ...PROTECTED_IMG_STYLE,
               transform: dragOffset ? `translateX(${dragOffset}px)` : undefined,
-              transition: dragOffset ? "none" : undefined,
+              transition: dragOffset ? "none" : "transform 200ms ease-out",
+              willChange: "transform",
             }}
             draggable={false}
             onContextMenu={preventContext}
@@ -150,7 +169,7 @@ export function BlogImageCarousel({ urls, alt = "Imagem do post", className }: B
                 e.stopPropagation();
                 prev();
               }}
-              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-2 text-white opacity-80 backdrop-blur-sm transition hover:bg-black/80 hover:opacity-100 active:scale-95 sm:opacity-0 sm:group-hover:opacity-100"
+              className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/60 p-2 text-white opacity-90 backdrop-blur-sm transition hover:bg-black/80 hover:opacity-100 active:scale-95 sm:opacity-0 sm:group-hover:opacity-100"
               aria-label="Imagem anterior"
             >
               <ChevronLeft className="h-5 w-5" />
@@ -161,13 +180,13 @@ export function BlogImageCarousel({ urls, alt = "Imagem do post", className }: B
                 e.stopPropagation();
                 next();
               }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-2 text-white opacity-80 backdrop-blur-sm transition hover:bg-black/80 hover:opacity-100 active:scale-95 sm:opacity-0 sm:group-hover:opacity-100"
-              aria-label="Próxima imagem"
+              className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/60 p-2 text-white opacity-90 backdrop-blur-sm transition hover:bg-black/80 hover:opacity-100 active:scale-95 sm:opacity-0 sm:group-hover:opacity-100"
+              aria-label="Proxima imagem"
             >
               <ChevronRight className="h-5 w-5" />
             </button>
 
-            <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full bg-black/60 px-2 py-1 backdrop-blur-sm">
+            <div className="pointer-events-none absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-full bg-black/60 px-2 py-1 backdrop-blur-sm">
               {urls.map((_, i) => (
                 <span
                   key={i}
@@ -179,7 +198,7 @@ export function BlogImageCarousel({ urls, alt = "Imagem do post", className }: B
               ))}
             </div>
 
-            <div className="absolute right-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white">
+            <div className="pointer-events-none absolute right-2 top-2 z-10 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white">
               {safeIndex + 1}/{urls.length}
             </div>
           </>
@@ -188,7 +207,7 @@ export function BlogImageCarousel({ urls, alt = "Imagem do post", className }: B
 
       {lightbox && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4 select-none touch-pan-y"
+          className="fixed inset-0 z-[100] flex select-none items-center justify-center bg-black/95 touch-pan-y"
           onClick={() => {
             if (isSwiping.current) return;
             setLightbox(false);
@@ -199,13 +218,35 @@ export function BlogImageCarousel({ urls, alt = "Imagem do post", className }: B
           onPointerUp={onPointerEnd}
           onPointerCancel={onPointerEnd}
         >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={current}
+            alt={alt}
+            data-protected="true"
+            decoding="async"
+            className="max-h-screen max-w-full object-contain"
+            draggable={false}
+            onContextMenu={preventContext}
+            onDragStart={(e) => e.preventDefault()}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              ...PROTECTED_IMG_STYLE,
+              transform: dragOffset ? `translateX(${dragOffset}px)` : undefined,
+              transition: dragOffset ? "none" : "transform 200ms ease-out",
+              willChange: "transform",
+            }}
+          />
+
           <button
             type="button"
-            onClick={() => setLightbox(false)}
-            className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightbox(false);
+            }}
+            className="absolute right-3 top-3 z-20 rounded-full bg-white/15 p-2.5 text-white backdrop-blur-md transition hover:bg-white/25 active:scale-95"
             aria-label="Fechar"
           >
-            <X className="h-5 w-5" />
+            <X className="h-6 w-6" />
           </button>
 
           {urls.length > 1 && (
@@ -216,10 +257,10 @@ export function BlogImageCarousel({ urls, alt = "Imagem do post", className }: B
                   e.stopPropagation();
                   prev();
                 }}
-                className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-3 text-white hover:bg-white/20"
+                className="absolute left-3 top-1/2 z-20 -translate-y-1/2 rounded-full bg-white/15 p-3 text-white backdrop-blur-md transition hover:bg-white/25 active:scale-95 sm:left-6 sm:p-4"
                 aria-label="Anterior"
               >
-                <ChevronLeft className="h-6 w-6" />
+                <ChevronLeft className="h-7 w-7 sm:h-8 sm:w-8" />
               </button>
               <button
                 type="button"
@@ -227,43 +268,16 @@ export function BlogImageCarousel({ urls, alt = "Imagem do post", className }: B
                   e.stopPropagation();
                   next();
                 }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-3 text-white hover:bg-white/20"
-                aria-label="Próxima"
+                className="absolute right-3 top-1/2 z-20 -translate-y-1/2 rounded-full bg-white/15 p-3 text-white backdrop-blur-md transition hover:bg-white/25 active:scale-95 sm:right-6 sm:p-4"
+                aria-label="Proxima"
               >
-                <ChevronRight className="h-6 w-6" />
+                <ChevronRight className="h-7 w-7 sm:h-8 sm:w-8" />
               </button>
+
+              <div className="pointer-events-none absolute bottom-6 left-1/2 z-20 -translate-x-1/2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-semibold text-white backdrop-blur-md">
+                {safeIndex + 1} de {urls.length}
+              </div>
             </>
-          )}
-
-          <div
-            className="relative max-h-[90vh] max-w-[95vw]"
-            onClick={(e) => e.stopPropagation()}
-            onContextMenu={preventContext}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={current}
-              alt={alt}
-              data-protected="true"
-              className={cn(
-                "max-h-[90vh] max-w-[95vw] rounded-lg object-contain",
-                !dragOffset && "transition"
-              )}
-              draggable={false}
-              onContextMenu={preventContext}
-              onDragStart={(e) => e.preventDefault()}
-              style={{
-                ...PROTECTED_IMG_STYLE,
-                transform: dragOffset ? `translateX(${dragOffset}px)` : undefined,
-                transition: dragOffset ? "none" : undefined,
-              }}
-            />
-          </div>
-
-          {urls.length > 1 && (
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-sm font-medium text-white backdrop-blur-sm">
-              {safeIndex + 1} de {urls.length}
-            </div>
           )}
         </div>
       )}
