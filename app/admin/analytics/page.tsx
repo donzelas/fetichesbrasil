@@ -2,10 +2,11 @@ import Link from "next/link";
 import {
   ArrowLeft,
   Bot,
+  Building2,
   Eye,
   Globe,
-  Laptop,
   LogIn,
+  Map,
   Monitor,
   Smartphone,
   Tablet,
@@ -43,6 +44,41 @@ const COUNTRY_NAMES: Record<string, string> = {
   GB: "Reino Unido",
 };
 
+const BR_STATES: Record<string, string> = {
+  AC: "Acre",
+  AL: "Alagoas",
+  AP: "Amapá",
+  AM: "Amazonas",
+  BA: "Bahia",
+  CE: "Ceará",
+  DF: "Distrito Federal",
+  ES: "Espírito Santo",
+  GO: "Goiás",
+  MA: "Maranhão",
+  MT: "Mato Grosso",
+  MS: "Mato Grosso do Sul",
+  MG: "Minas Gerais",
+  PA: "Pará",
+  PB: "Paraíba",
+  PR: "Paraná",
+  PE: "Pernambuco",
+  PI: "Piauí",
+  RJ: "Rio de Janeiro",
+  RN: "Rio Grande do Norte",
+  RS: "Rio Grande do Sul",
+  RO: "Rondônia",
+  RR: "Roraima",
+  SC: "Santa Catarina",
+  SP: "São Paulo",
+  SE: "Sergipe",
+  TO: "Tocantins",
+};
+
+function prettyRegion(country: string, region: string): string {
+  if (country === "BR" && BR_STATES[region]) return BR_STATES[region];
+  return region;
+}
+
 export default async function AnalyticsPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const days = Math.min(90, Math.max(1, Number(sp.days) || 7));
@@ -53,6 +89,8 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
     topPagesRes,
     topReferrersRes,
     byCountryRes,
+    byRegionRes,
+    byCityRes,
     byDeviceRes,
     byHourRes,
     byDayRes,
@@ -62,6 +100,8 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
     supabase.rpc("analytics_top_pages", { p_days: days, p_limit: 20 }),
     supabase.rpc("analytics_top_referrers", { p_days: days, p_limit: 15 }),
     supabase.rpc("analytics_by_country", { p_days: days }),
+    supabase.rpc("analytics_by_region", { p_days: days }),
+    supabase.rpc("analytics_by_city", { p_days: days }),
     supabase.rpc("analytics_by_device", { p_days: days }),
     supabase.rpc("analytics_by_hour"),
     supabase.rpc("analytics_by_day", { p_days: days }),
@@ -72,6 +112,8 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   const topPages = topPagesRes.data ?? [];
   const topReferrers = topReferrersRes.data ?? [];
   const byCountry = byCountryRes.data ?? [];
+  const byRegion = byRegionRes.data ?? [];
+  const byCity = byCityRes.data ?? [];
   const byDevice = byDeviceRes.data ?? [];
   const byHour = byHourRes.data ?? [];
   const byDay = byDayRes.data ?? [];
@@ -301,6 +343,78 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
                     />
                   );
                 })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="space-y-3 py-5">
+            <div className="flex items-center gap-2">
+              <Map className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-semibold">
+                Top regiões (UF / estado)
+              </h2>
+            </div>
+            {byRegion.length === 0 ? (
+              <p className="py-4 text-center text-xs text-muted-foreground">
+                Sem dados de região ainda — aguarde alguns acessos novos pra
+                Netlify enviar a geo detalhada.
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                {byRegion.map((r) => (
+                  <Row
+                    key={`${r.country}-${r.region}`}
+                    label={
+                      <span className="truncate">
+                        <span className="font-mono mr-2 text-[10px] text-muted-foreground">
+                          {r.country}/{r.region}
+                        </span>
+                        {prettyRegion(r.country, r.region)}
+                      </span>
+                    }
+                    value={r.views}
+                    sub={`${r.uniques} unique`}
+                    max={Math.max(...byRegion.map((x) => Number(x.views)))}
+                  />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Cidades + Dispositivos */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardContent className="space-y-3 py-5">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-semibold">Top cidades</h2>
+            </div>
+            {byCity.length === 0 ? (
+              <p className="py-4 text-center text-xs text-muted-foreground">
+                Sem dados de cidade ainda — aguarde alguns acessos novos.
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                {byCity.map((c) => (
+                  <Row
+                    key={`${c.country}-${c.region}-${c.city}`}
+                    label={
+                      <span className="truncate">
+                        <span className="font-semibold">{c.city}</span>
+                        <span className="ml-1.5 text-[10px] text-muted-foreground">
+                          {c.country}/{c.region}
+                        </span>
+                      </span>
+                    }
+                    value={c.views}
+                    sub={`${c.uniques} unique`}
+                    max={Math.max(...byCity.map((x) => Number(x.views)))}
+                  />
+                ))}
               </div>
             )}
           </CardContent>

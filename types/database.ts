@@ -848,6 +848,25 @@ export interface Database {
         Args: { p_days?: number };
         Returns: Array<{ country: string; views: number; uniques: number }>;
       };
+      analytics_by_region: {
+        Args: { p_days?: number };
+        Returns: Array<{
+          country: string;
+          region: string;
+          views: number;
+          uniques: number;
+        }>;
+      };
+      analytics_by_city: {
+        Args: { p_days?: number };
+        Returns: Array<{
+          country: string;
+          region: string;
+          city: string;
+          views: number;
+          uniques: number;
+        }>;
+      };
       analytics_by_device: {
         Args: { p_days?: number };
         Returns: Array<{
