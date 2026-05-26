@@ -867,6 +867,29 @@ export interface Database {
           uniques: number;
         }>;
       };
+      admin_revenue_summary: {
+        Args: Record<string, never>;
+        Returns: Array<{
+          total_revenue_cents: number;
+          total_payments: number;
+          revenue_30d_cents: number;
+          payments_30d: number;
+          unique_buyers: number;
+        }>;
+      };
+      admin_payments_by_plan: {
+        Args: Record<string, never>;
+        Returns: Array<{
+          plan_id: string | null;
+          title: string;
+          duration_days: number | null;
+          price_cents: number | null;
+          payment_method: string | null;
+          qtd: number;
+          revenue_cents: number;
+          last_payment_at: string | null;
+        }>;
+      };
       analytics_by_device: {
         Args: { p_days?: number };
         Returns: Array<{

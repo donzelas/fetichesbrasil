@@ -2,7 +2,9 @@ import Link from "next/link";
 import {
   Activity,
   BarChart3,
+  CalendarClock,
   Crown,
+  DollarSign,
   FileText,
   Flame,
   Image as ImageIcon,
@@ -11,12 +13,21 @@ import {
   Music2,
   Newspaper,
   Radio,
+  ShoppingBag,
   Tag,
+  TrendingUp,
   UserPlus,
   Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
+
+function brl(cents: number): string {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format((cents ?? 0) / 100);
+}
 
 export const dynamic = "force-dynamic";
 
@@ -115,6 +126,20 @@ export default async function AdminHomePage() {
       .gte("viewed_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
       .eq("is_admin_view", false),
   ]);
+
+  const [revenueSummaryRes, paymentsByPlanRes] = await Promise.all([
+    supabase.rpc("admin_revenue_summary"),
+    supabase.rpc("admin_payments_by_plan"),
+  ]);
+
+  const revenue = revenueSummaryRes.data?.[0] ?? {
+    total_revenue_cents: 0,
+    total_payments: 0,
+    revenue_30d_cents: 0,
+    payments_30d: 0,
+    unique_buyers: 0,
+  };
+  const paymentsByPlan = paymentsByPlanRes.data ?? [];
 
   const liveTotal = (liveRoomMessages ?? 0) + (liveDmMessages ?? 0);
 
@@ -315,6 +340,147 @@ export default async function AdminHomePage() {
           </CardContent>
         </Card>
       </Link>
+
+      {/* ─── RECEITA & VENDAS POR PLANO ──────────────────────── */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Card 1: Receita total */}
+        <Link href="/admin/planos" className="group block">
+          <Card className="relative h-full overflow-hidden border-emerald-500/30 bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-transparent transition hover:border-emerald-500/60">
+            <CardContent className="space-y-4 py-6">
+              <div className="flex items-center gap-3">
+                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-500/20 text-emerald-400">
+                  <DollarSign className="h-6 w-6" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-300/80">
+                    Receita total
+                  </p>
+                  <p className="text-3xl font-bold tabular-nums tracking-tight">
+                    {brl(Number(revenue.total_revenue_cents))}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {Number(revenue.total_payments)} pagamento(s) ·{" "}
+                    {Number(revenue.unique_buyers)} comprador(es) único(s)
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 border-t border-emerald-500/15 pt-3">
+                <div className="rounded-lg bg-card/40 p-3">
+                  <p className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <TrendingUp className="h-3 w-3" />
+                    Últimos 30 dias
+                  </p>
+                  <p className="mt-1 text-lg font-semibold tabular-nums">
+                    {brl(Number(revenue.revenue_30d_cents))}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {Number(revenue.payments_30d)} pagamento(s)
+                  </p>
+                </div>
+                <div className="rounded-lg bg-card/40 p-3">
+                  <p className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <CalendarClock className="h-3 w-3" />
+                    Ticket médio
+                  </p>
+                  <p className="mt-1 text-lg font-semibold tabular-nums">
+                    {Number(revenue.total_payments) > 0
+                      ? brl(
+                          Math.round(
+                            Number(revenue.total_revenue_cents) /
+                              Number(revenue.total_payments)
+                          )
+                        )
+                      : brl(0)}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    por pagamento
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* Card 2: Vendas por plano */}
+        <Card className="h-full">
+          <CardContent className="space-y-3 py-6">
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="h-5 w-5 text-primary" />
+              <h2 className="text-sm font-semibold">Vendas por plano</h2>
+              <span className="ml-auto text-xs text-muted-foreground">
+                {paymentsByPlan.length}{" "}
+                {paymentsByPlan.length === 1 ? "plano vendido" : "planos vendidos"}
+              </span>
+            </div>
+            {paymentsByPlan.length === 0 ? (
+              <p className="py-8 text-center text-xs text-muted-foreground">
+                Nenhum pagamento confirmado ainda.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {paymentsByPlan.map((row, i) => {
+                  const pct =
+                    Number(revenue.total_payments) > 0
+                      ? Math.round(
+                          (Number(row.qtd) / Number(revenue.total_payments)) * 100
+                        )
+                      : 0;
+                  return (
+                    <div
+                      key={`${row.plan_id ?? "removed"}-${i}`}
+                      className="space-y-1 rounded-lg border border-border/40 bg-card/30 p-3"
+                    >
+                      <div className="flex flex-wrap items-baseline justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold">
+                            {row.title}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {row.duration_days
+                              ? `${row.duration_days} dias`
+                              : "—"}
+                            {row.price_cents != null && (
+                              <>
+                                {" · "}
+                                {brl(Number(row.price_cents))}
+                              </>
+                            )}
+                            {row.payment_method && (
+                              <>
+                                {" · "}
+                                <span className="uppercase">
+                                  {row.payment_method}
+                                </span>
+                              </>
+                            )}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-base font-bold tabular-nums leading-tight">
+                            {Number(row.qtd)}
+                            <span className="ml-1 text-[10px] font-normal text-muted-foreground">
+                              {Number(row.qtd) === 1 ? "venda" : "vendas"}
+                            </span>
+                          </p>
+                          <p className="text-xs font-semibold tabular-nums text-emerald-400">
+                            {brl(Number(row.revenue_cents))}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="h-1 overflow-hidden rounded-full bg-muted/40">
+                        <div
+                          className="h-full rounded-full bg-emerald-500/60"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* ─── STATS COMPACTAS ─────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
