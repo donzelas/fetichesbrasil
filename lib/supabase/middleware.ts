@@ -13,14 +13,20 @@ function toSessionOnly(options: CookieOptions): CookieOptions {
   return rest;
 }
 
+const ADMIN_SESSION_COOKIE = "fb_admin_session";
+
 /**
  * Middleware leve: só repassa cookies (refresh de sessão) sem chamar
  * supabase.auth.getUser(). A validação de auth é feita nas próprias
  * páginas/layouts (Node runtime), evitando bug de TLS no Edge Runtime
  * em ambientes com interceptação SSL (antivírus / proxy corporativo).
+ *
+ * EXCECAO: se cookie `fb_admin_session=1` existe, mantem cookies
+ * persistentes (admin nao desloga sozinho).
  */
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
+  const keepSession = request.cookies.get(ADMIN_SESSION_COOKIE)?.value === "1";
 
   // Inicializa o client apenas para sincronizar cookies enviados/recebidos.
   createServerClient<Database>(
@@ -36,9 +42,10 @@ export async function updateSession(request: NextRequest) {
             request.cookies.set(name, value)
           );
           supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, toSessionOnly(options))
-          );
+          cookiesToSet.forEach(({ name, value, options }) => {
+            const finalOptions = keepSession ? options : toSessionOnly(options);
+            supabaseResponse.cookies.set(name, value, finalOptions);
+          });
         },
       },
     }

@@ -34,8 +34,16 @@ export function Header() {
 
   async function handleLogout() {
     const supabase = createClient();
+    // Limpa cookie de admin persistente (se houver)
+    if (isAdmin) {
+      try {
+        await fetch("/api/auth/admin-session", { method: "DELETE" });
+      } catch {
+        // Ignora - logout do supabase eh o importante
+      }
+    }
     await supabase.auth.signOut();
-    router.push(isAdmin ? "/admin" : "/");
+    router.push(isAdmin ? "/login" : "/");
     router.refresh();
   }
 

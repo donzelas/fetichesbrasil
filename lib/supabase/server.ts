@@ -8,6 +8,9 @@ import type { Database } from "@/types/database";
  * em "session cookies" — eles são apagados quando o navegador é fechado.
  * Combinado com AutoLogout client-side (5min sem foco), garante que o usuário
  * sempre precisa logar novamente.
+ *
+ * EXCECAO pra admin: se cookie `fb_admin_session=1` existe, mantem
+ * sessao persistente (admin nao desloga sozinho).
  */
 function toSessionOnly(options: CookieOptions): CookieOptions {
   const rest = { ...options };
@@ -16,8 +19,11 @@ function toSessionOnly(options: CookieOptions): CookieOptions {
   return rest;
 }
 
+const ADMIN_SESSION_COOKIE = "fb_admin_session";
+
 export async function createClient() {
   const cookieStore = await cookies();
+  const keepSession = cookieStore.get(ADMIN_SESSION_COOKIE)?.value === "1";
 
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -30,7 +36,8 @@ export async function createClient() {
         setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
           try {
             cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, toSessionOnly(options));
+              const finalOptions = keepSession ? options : toSessionOnly(options);
+              cookieStore.set(name, value, finalOptions);
             });
           } catch {
             // Server Components não podem setar cookies — ignorado em SSR puro

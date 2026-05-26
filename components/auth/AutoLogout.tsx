@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
+import { useUser } from "@/hooks/useUser";
 
 const INACTIVITY_MS = 5 * 60 * 1000;
 
@@ -13,14 +14,23 @@ const INACTIVITY_MS = 5 * 60 * 1000;
  * - Se a aba volta antes de estourar, o timer é cancelado.
  * - Se estoura, faz signOut e redireciona para a landing.
  *
+ * EXCECAO: admins nao sao deslogados automaticamente (trabalham por
+ * horas seguidas, isso atrapalha).
+ *
  * Renderiza nada — só efeito colateral.
  */
 export function AutoLogout() {
   const router = useRouter();
+  const { isAdmin, loading } = useUser();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loggedOutRef = useRef(false);
 
   useEffect(() => {
+    // Aguarda profile carregar antes de decidir se trackeia
+    if (loading) return;
+    // Admin nao desloga sozinho
+    if (isAdmin) return;
+
     const supabase = createClient();
 
     function clearTimer() {
@@ -85,7 +95,7 @@ export function AutoLogout() {
       window.removeEventListener("blur", onBlur);
       window.removeEventListener("focus", onFocus);
     };
-  }, [router]);
+  }, [router, isAdmin, loading]);
 
   return null;
 }

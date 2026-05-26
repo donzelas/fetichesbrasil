@@ -5,6 +5,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { AgeGate } from "@/components/layout/AgeGate";
 import { AutoLogout } from "@/components/auth/AutoLogout";
+import { AdminSessionKeeper } from "@/components/auth/AdminSessionKeeper";
 import { Toaster } from "@/components/ui/sonner";
 import { OrganizationJsonLd, WebsiteJsonLd } from "@/components/seo/JsonLd";
 import { PageViewTracker } from "@/components/analytics/PageViewTracker";
@@ -101,6 +102,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-background font-sans antialiased">
         <AgeGate />
         <AutoLogout />
+        <AdminSessionKeeper />
         <Suspense fallback={null}>
           <PageViewTracker />
         </Suspense>
