@@ -49,33 +49,36 @@ export async function POST(request: Request) {
     report.groq = { ok: false, error_message: "GROQ_API_KEY ausente" };
   }
 
-  // Teste Gemini
+  // Teste Gemini - testa todos os 3 modelos pra ver quais funcionam
   if (process.env.GEMINI_API_KEY) {
-    try {
-      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({
-        model: "gemini-flash-latest",
-        safetySettings: [
-          { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-          { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-          { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-          { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-        ],
-      });
-      const res = await model.generateContent("Responda apenas: ok");
-      report.gemini = { ok: true, response: res.response.text() };
-    } catch (e) {
-      report.gemini = {
-        ok: false,
-        error_name: e instanceof Error ? e.name : "?",
-        error_message: e instanceof Error ? e.message : String(e),
-        error_stack: e instanceof Error ? e.stack?.split("\n").slice(0, 8).join("\n") : null,
-        // Tenta extrair cause/innerError
-        error_cause: (e as { cause?: unknown })?.cause
-          ? String((e as { cause?: unknown }).cause)
-          : null,
-      };
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const safetySettings = [
+      { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+      { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+      { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+      { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+    ];
+    const modelsToTest = [
+      "gemini-2.5-flash",
+      "gemini-1.5-flash",
+      "gemini-1.5-flash-8b",
+      "gemini-flash-latest",
+    ];
+    const geminiReport: Record<string, unknown> = {};
+    for (const modelName of modelsToTest) {
+      try {
+        const model = genAI.getGenerativeModel({ model: modelName, safetySettings });
+        const res = await model.generateContent("Responda apenas: ok");
+        geminiReport[modelName] = { ok: true, response: res.response.text().slice(0, 50) };
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        geminiReport[modelName] = {
+          ok: false,
+          error: msg.slice(0, 250),
+        };
+      }
     }
+    report.gemini = geminiReport;
   } else {
     report.gemini = { ok: false, error_message: "GEMINI_API_KEY ausente" };
   }
