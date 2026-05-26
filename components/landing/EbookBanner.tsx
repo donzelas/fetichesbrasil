@@ -28,7 +28,7 @@ export async function EbookBanner() {
       : null;
 
   return (
-    <section className="container py-6 md:py-10">
+    <section className="container -mt-10 pb-6 md:-mt-20 md:pb-10">
       <Link
         href={`/ebooks/${ebook.slug}`}
         className="group relative mx-auto block max-w-4xl overflow-hidden rounded-3xl border border-border/50 bg-gradient-to-br from-card via-card/80 to-background p-6 transition hover:border-primary/50 md:p-10"
