@@ -17,7 +17,11 @@ export default async function SalasPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const supabase = await createClient();
   const viewer = await getViewerOrRedirectAdmin("/salas");
-  const initialViewer = { isPremium: viewer.isPremium, isAuthenticated: viewer.isAuthenticated };
+  const initialViewer = {
+    isPremium: viewer.isPremium,
+    isAuthenticated: viewer.isAuthenticated,
+    isInTrial: viewer.isInTrial,
+  };
 
   let query = supabase
     .from("chat_rooms")

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Crown, Flame, Lock, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useUser } from "@/hooks/useUser";
+import { useTrialStatus } from "@/hooks/useTrialStatus";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,21 +30,27 @@ interface RoomCardProps {
   variant?: "default" | "featured" | "compact";
   showRank?: number;
   /** Estado inicial vindo do servidor para evitar flash de bloqueio durante hidratação */
-  initialViewer?: { isPremium: boolean; isAuthenticated: boolean };
+  initialViewer?: { isPremium: boolean; isAuthenticated: boolean; isInTrial?: boolean };
 }
 
 export function RoomCard({ room, variant = "default", showRank, initialViewer }: RoomCardProps) {
   const router = useRouter();
   const { isPremium: clientIsPremium, profile, isAuthenticated: clientIsAuth, loading } = useUser();
+  const { active: trialActive, bypass: trialBypass } = useTrialStatus();
 
   const isPremium = loading && initialViewer ? initialViewer.isPremium : clientIsPremium;
   const isAuthenticated = loading && initialViewer ? initialViewer.isAuthenticated : clientIsAuth;
+  // Trial libera mesmo acesso de premium durante a 1h.
+  // Durante hydration usa o valor server-side pra evitar flash de bloqueio.
+  const trialUnlock =
+    loading && initialViewer ? !!initialViewer.isInTrial : trialActive && !trialBypass;
+  const hasAccess = isPremium || trialUnlock;
   const [unlockOpen, setUnlockOpen] = useState(false);
   const [switchOpen, setSwitchOpen] = useState(false);
   const [currentRoomName, setCurrentRoomName] = useState("");
   const [joining, setJoining] = useState(false);
 
-  const isLocked = room.is_premium_only && !isPremium;
+  const isLocked = room.is_premium_only && !hasAccess;
 
   async function enterRoom() {
     setJoining(true);
@@ -132,7 +139,7 @@ export function RoomCard({ room, variant = "default", showRank, initialViewer }:
                   {room.fetish.name}
                 </Badge>
               )}
-              {isPremium ? (
+              {hasAccess ? (
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Users className="h-3 w-3" />
                   {room.active_users_count}

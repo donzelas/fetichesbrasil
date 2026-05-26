@@ -20,7 +20,11 @@ const HIGHLIGHTED_FETISH_SLUGS = ["cuckold", "swing", "fisting", "exibicionismo"
 export default async function ChatPage() {
   const supabase = await createClient();
   const viewer = await getViewerOrRedirectAdmin("/chat");
-  const initialViewer = { isPremium: viewer.isPremium, isAuthenticated: viewer.isAuthenticated };
+  const initialViewer = {
+    isPremium: viewer.isPremium,
+    isAuthenticated: viewer.isAuthenticated,
+    isInTrial: viewer.isInTrial,
+  };
 
   const [
     { data: cats },

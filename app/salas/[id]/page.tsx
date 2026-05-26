@@ -37,7 +37,7 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, username, display_name, avatar_url, is_premium, is_admin")
+    .select("id, username, display_name, avatar_url, is_premium, is_admin, trial_started_at")
     .eq("id", user.id)
     .single();
 
@@ -45,8 +45,19 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
 
   const isOwner = room.owner_id === user.id;
   const isAdmin = !!profile.is_admin;
+  const trialStartedAt = (profile as { trial_started_at: string | null })
+    .trial_started_at;
+  const isInTrial = trialStartedAt
+    ? new Date(trialStartedAt).getTime() + 3600 * 1000 > Date.now()
+    : false;
 
-  if (room.is_premium_only && !profile.is_premium && !isOwner && !isAdmin) {
+  if (
+    room.is_premium_only &&
+    !profile.is_premium &&
+    !isOwner &&
+    !isAdmin &&
+    !isInTrial
+  ) {
     return (
       <div className="container py-12">
         <div className="mx-auto max-w-md rounded-2xl border border-premium/30 bg-card p-8 text-center">

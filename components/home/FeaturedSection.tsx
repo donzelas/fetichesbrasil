@@ -11,7 +11,7 @@ type RoomForCard = Pick<
 
 interface FeaturedSectionProps {
   rooms: RoomForCard[];
-  initialViewer?: { isPremium: boolean; isAuthenticated: boolean };
+  initialViewer?: { isPremium: boolean; isAuthenticated: boolean; isInTrial?: boolean };
 }
 
 export function FeaturedSection({ rooms, initialViewer }: FeaturedSectionProps) {

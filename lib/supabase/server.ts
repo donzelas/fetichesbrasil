@@ -52,6 +52,8 @@ export interface Viewer {
   isAuthenticated: boolean;
   isPremium: boolean;
   isAdmin: boolean;
+  /** True se usuario esta no periodo de trial gratuito de 1h. */
+  isInTrial: boolean;
   userId: string | null;
 }
 
@@ -62,19 +64,32 @@ export async function getViewer(): Promise<Viewer> {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { isAuthenticated: false, isPremium: false, isAdmin: false, userId: null };
+    return {
+      isAuthenticated: false,
+      isPremium: false,
+      isAdmin: false,
+      isInTrial: false,
+      userId: null,
+    };
   }
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_premium, is_admin")
+    .select("is_premium, is_admin, trial_started_at")
     .eq("id", user.id)
     .single();
+
+  const trialStartedAt = (profile as { trial_started_at: string | null } | null)
+    ?.trial_started_at;
+  const isInTrial = trialStartedAt
+    ? new Date(trialStartedAt).getTime() + 3600 * 1000 > Date.now()
+    : false;
 
   return {
     isAuthenticated: true,
     isPremium: !!profile?.is_premium,
     isAdmin: !!profile?.is_admin,
+    isInTrial,
     userId: user.id,
   };
 }
