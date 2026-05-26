@@ -1,0 +1,108 @@
+name: Gerar conteudo SEO IA
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Modo de geracao"
+        required: true
+        default: "pending"
+        type: choice
+        options:
+          - pending
+          - all
+      limit:
+        description: "Limite (0 = sem limite)"
+        required: false
+        default: "0"
+        type: string
+
+jobs:
+  generate:
+    name: Gera conteudo SEO em loop
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Valida secrets
+        env:
+          ADMIN_API_TOKEN: ${{ secrets.ADMIN_API_TOKEN }}
+          SITE_URL: ${{ secrets.SITE_URL }}
+        run: |
+          if [ -z "$ADMIN_API_TOKEN" ]; then
+            echo "::error::ADMIN_API_TOKEN nao configurado"
+            exit 1
+          fi
+          if [ -z "$SITE_URL" ]; then
+            echo "::error::SITE_URL nao configurado"
+            exit 1
+          fi
+          echo "OK secrets configurados"
+
+      - name: Loop de geracao
+        env:
+          ADMIN_API_TOKEN: ${{ secrets.ADMIN_API_TOKEN }}
+          SITE_URL: ${{ secrets.SITE_URL }}
+          MODE: ${{ github.event.inputs.mode || 'pending' }}
+          LIMIT: ${{ github.event.inputs.limit || '0' }}
+        run: |
+          set -u
+          done=0
+          failed=0
+          iter=0
+          max_iter=${LIMIT:-0}
+
+          echo "::notice::Iniciando geracao (modo: $MODE, limite: $max_iter)"
+
+          while true; do
+            iter=$((iter + 1))
+            if [ "$max_iter" != "0" ] && [ "$iter" -gt "$max_iter" ]; then
+              echo "::notice::Atingiu limite de $max_iter iteracoes"
+              break
+            fi
+
+            if [ "$MODE" = "all" ]; then
+              body='{"mode":"next","force":true}'
+            else
+              body='{"mode":"next"}'
+            fi
+
+            response=$(curl -sS -X POST "${SITE_URL}/api/admin/seo/generate" \
+              -H "Content-Type: application/json" \
+              -H "X-Admin-Token: ${ADMIN_API_TOKEN}" \
+              --max-time 50 \
+              --data "$body" \
+              -w "\n__HTTP_CODE__:%{http_code}" || echo '{"error":"curl_failed"}')
+
+            http_code=$(echo "$response" | grep -o '__HTTP_CODE__:[0-9]*' | cut -d: -f2)
+            json_body=$(echo "$response" | sed 's/__HTTP_CODE__:[0-9]*//g')
+
+            if [ "$http_code" = "200" ]; then
+              is_done=$(echo "$json_body" | grep -o '"done":true' || echo "")
+              if [ -n "$is_done" ]; then
+                echo "::notice::Nenhum fetiche pendente. Finalizado."
+                break
+              fi
+
+              slug=$(echo "$json_body" | grep -o '"slug":"[^"]*"' | head -1 | cut -d'"' -f4)
+              name=$(echo "$json_body" | grep -o '"name":"[^"]*"' | head -1 | cut -d'"' -f4)
+              words=$(echo "$json_body" | grep -o '"words":[0-9]*' | head -1 | cut -d: -f2)
+
+              done=$((done + 1))
+              echo "[$iter] OK: $name ($slug, $words palavras)"
+            else
+              failed=$((failed + 1))
+              error=$(echo "$json_body" | grep -o '"error":"[^"]*"' | head -1 | cut -d'"' -f4)
+              echo "::warning::[$iter] FAIL (HTTP $http_code): $error"
+
+              if [ "$failed" -ge 3 ]; then
+                echo "::error::Muitas falhas consecutivas, abortando"
+                exit 1
+              fi
+            fi
+
+            sleep 2.5
+          done
+
+          echo ""
+          echo "::notice::FINALIZADO - Gerados: $done | Falhas: $failed"
