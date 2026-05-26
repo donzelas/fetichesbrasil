@@ -1,12 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Eye, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import {
   PROTECTED_IMG_STYLE,
   preventImageContext as preventContext,
-  useProtectionState,
 } from "@/lib/hooks/useProtectionState";
 
 interface BlogImageCarouselProps {
@@ -21,7 +20,8 @@ export function BlogImageCarousel({ urls, alt = "Imagem do post", className }: B
   const [index, setIndex] = useState(0);
   const [lightbox, setLightbox] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
-  const hidden = useProtectionState();
+  // Blog e publico/gratuito - nao precisa borrar imagens ao perder foco.
+  // Mantemos so anti-right-click e anti-drag (PROTECTED_IMG_STYLE).
 
   const pointerStart = useRef<{ x: number; y: number } | null>(null);
   const isSwiping = useRef(false);
@@ -129,8 +129,7 @@ export function BlogImageCarousel({ urls, alt = "Imagem do post", className }: B
             data-protected="true"
             className={cn(
               "h-full w-full object-cover transition",
-              !dragOffset && "group-hover:scale-[1.02]",
-              hidden && "blur-2xl scale-110"
+              !dragOffset && "group-hover:scale-[1.02]"
             )}
             style={{
               ...PROTECTED_IMG_STYLE,
@@ -142,15 +141,6 @@ export function BlogImageCarousel({ urls, alt = "Imagem do post", className }: B
             onDragStart={(e) => e.preventDefault()}
           />
         </button>
-
-        {hidden && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-md">
-            <span className="flex items-center gap-2 rounded-full bg-black/80 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-white">
-              <Eye className="h-3.5 w-3.5" />
-              conteúdo protegido
-            </span>
-          </div>
-        )}
 
         {urls.length > 1 && (
           <>
@@ -257,7 +247,6 @@ export function BlogImageCarousel({ urls, alt = "Imagem do post", className }: B
               data-protected="true"
               className={cn(
                 "max-h-[90vh] max-w-[95vw] rounded-lg object-contain",
-                hidden && "blur-3xl",
                 !dragOffset && "transition"
               )}
               draggable={false}
@@ -269,15 +258,6 @@ export function BlogImageCarousel({ urls, alt = "Imagem do post", className }: B
                 transition: dragOffset ? "none" : undefined,
               }}
             />
-
-            {hidden && (
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <span className="flex items-center gap-2 rounded-full bg-black/90 px-4 py-2 text-sm font-semibold uppercase tracking-wider text-white shadow-2xl">
-                  <Eye className="h-4 w-4" />
-                  conteúdo protegido
-                </span>
-              </div>
-            )}
           </div>
 
           {urls.length > 1 && (

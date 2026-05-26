@@ -78,14 +78,18 @@ export function useTrialStatus(): TrialStatus {
   }
 
   if (!startedAt) {
-    // Edge case: usuario sem trial_started_at (legado, sem trigger).
-    // Trata como expirado pra ser seguro.
+    // Edge case: profile chegou no client sem trial_started_at.
+    // Pode ser cache antigo (profile carregado antes da migration) OU
+    // legacy sem trigger. Trata como ATIVO pra nao bloquear usuario
+    // injustamente. A seguranca real esta no RLS do banco:
+    //   - mensagens: bloqueia via is_in_trial() do server
+    //   - se RLS diz nao, frontend nao consegue ver nada de qualquer jeito
     return {
       loading: false,
       bypass: false,
-      active: false,
-      expired: true,
-      secondsLeft: 0,
+      active: true,
+      expired: false,
+      secondsLeft: TRIAL_DURATION,
       startedAt: null,
     };
   }
