@@ -209,10 +209,10 @@ begin
      set current_room_id = p_room_id
    where id = v_user_id;
 
-  insert into public.room_participants (room_id, user_id, joined_at, last_seen_at)
-  values (p_room_id, v_user_id, now(), now())
+  insert into public.room_participants (room_id, user_id, joined_at)
+  values (p_room_id, v_user_id, now())
   on conflict (room_id, user_id) do update
-    set last_seen_at = now();
+    set joined_at = excluded.joined_at;
 end;
 $$;
 
